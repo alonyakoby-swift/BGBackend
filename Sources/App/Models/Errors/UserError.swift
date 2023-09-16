@@ -10,19 +10,20 @@ import Vapor
 
 enum UserError: AbortError {
     case emailTaken
+        
     var description: String {
         reason
     }
     
     var status: HTTPResponseStatus {
         switch self {
-        case .emailTaken: return .conflict
+            case .emailTaken: return .conflict
         }
     }
     
     var reason: String {
         switch self {
-        case .emailTaken: return "User with this email already exists."
+            case .emailTaken: return "User with this email already exists."
         }
     }
 }

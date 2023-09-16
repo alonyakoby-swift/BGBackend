@@ -7,3 +7,11 @@
   
 
 import Foundation
+
+/*
+ TODO: [x]
+ [] BASE REPO
+ [] ADD COL TO BOARD
+ []
+ []
+ */

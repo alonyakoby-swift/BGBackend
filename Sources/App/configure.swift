@@ -1,23 +1,51 @@
-import NIOSSL
+//
+//
+//  Copyright © 2023.
+//  Alon Yakobichvili
+//  All rights reserved.
+//
+
 import Fluent
 import FluentMongoDriver
 import Leaf
 import Vapor
+//import JWT
 
+extension String {
+    var bytes: [UInt8] { .init(self.utf8) }
+}
 // configures your application
-public func configure(_ app: Application) async throws {
+public func configure(_ app: Application) throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-
-    try app.databases.use(DatabaseConfigurationFactory.mongo(
-        connectionString: Environment.get("DATABASE_URL") ?? "mongodb://localhost:27017/vapor_database"
-    ), as: .mongo)
-
-    app.migrations.add(CreateTodo())
-
-    app.views.use(.leaf)
-
     
+    //    app.jwt.signers.use(.hs256(key: "3Cz30pJzxbqYvLjXqTJjU8VpU5bxvgoNRvq1a+BXOts"))
+    let encoder = JSONEncoder()
+    encoder.keyEncodingStrategy = .convertToSnakeCase
+    encoder.dateEncodingStrategy = .iso8601
+    
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    decoder.dateDecodingStrategy = .iso8601
+
+    ContentConfiguration.global.use(encoder: encoder, for: .json)
+    ContentConfiguration.global.use(decoder: decoder, for: .json)
+    
+//    app.jwt.signers.use(.hs256(key: Environment.get(ENV.jwtSecret.key) ?? ENV.jwtSecret.dev_default))
+
+    try app.databases.use(.mongo(connectionString:Environment.get(ENV.databaseURL.key) ?? ENV.databaseURL.dev_default),
+                          as: .mongo)
+ 
+    app_migrations.forEach { app.migrations.add($0) }
+    
+    try app.autoMigrate().wait()
+ 
+    app.views.use(.leaf)
+//    app.middleware.use(DBUser.authenticator())
+//    app.middleware.use(Token.authenticator())
+
+    app.middleware.use(ErrorMiddleware.default(environment: app.environment))
+    app.passwords.use(.bcrypt)
 
     // register routes
     try routes(app)

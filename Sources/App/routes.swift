@@ -1,14 +1,44 @@
+//
+//
+//  Copyright © 2023.
+//  Alon Yakobichvili
+//  All rights reserved.
+//
+
 import Fluent
 import Vapor
+import Leaf
 
 func routes(_ app: Application) throws {
-    app.get { req async throws in
-        try await req.view.render("index", ["title": "Hello Vapor!"])
+    let routes: [RouteCollection] = [
+        CategoryController(path: "categories"),
+        BrandController(path: "brands"),
+        KPIController(path: "kpi"),
+        CustomerController(path: "customers"),
+        VendorController(path: "vendors"),
+        FilesController(path: "files"),
+        UserController(path: "users"),
+        TeamController(path: "teams"),
+        CollectionController(path: "collections"),
+        ProductController(path: "products")
+    ]
+    
+    app.get("status") { req async -> String in
+        "Status Online!"
     }
-
-    app.get("hello") { req async -> String in
-        "Hello, world!"
+    
+    do {
+        try routes.forEach { try app.register(collection: $0) }
+    } catch {
+        print("Routes couldn't be initialized!")
     }
-
-    try app.register(collection: TodoController())
 }
+
+//
+//    let mailConfig = EmailConfiguration(hostname: "smtp.gmail.com",
+//                                        email: "alon.yakoby@gmail.com",
+//                                        password: "mgdwoxhkusodvsjz")
+//
+
+
+
