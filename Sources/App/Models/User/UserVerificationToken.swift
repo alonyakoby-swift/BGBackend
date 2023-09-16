@@ -10,7 +10,7 @@ import Foundation
 import Fluent
 import Vapor
 
-final class DBUserVerificationToken: Model, Content {
+final class UserVerificationToken: Model, Content {
     
     static let schema = "UserActivationToken"
     
@@ -49,16 +49,16 @@ final class DBUserVerificationToken: Model, Content {
     }
 }
 
-extension DBUserVerificationTokenMigration {
+extension UserVerificationTokenMigration: Migration {
     var schema: String {
         "UserActivationToken"
     }
 
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(schema)
-            .field(DBUserVerificationToken.FieldKeys.id, .uuid, .identifier(auto: true))
-            .field(DBUserVerificationToken.FieldKeys.token, .string)
-            .field(DBUserVerificationToken.FieldKeys.userID, .uuid)
+            .field(UserVerificationToken.FieldKeys.id, .uuid, .identifier(auto: true))
+            .field(UserVerificationToken.FieldKeys.token, .string)
+            .field(UserVerificationToken.FieldKeys.userID, .uuid)
             .create()
     }
     
