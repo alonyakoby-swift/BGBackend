@@ -6,11 +6,11 @@
 //
   
 
-import Foundation
-import TokamakShim
-
-struct TokamakTestView: View {
-    var body: some View {
-        Text("Hello, Tokamak!")
-    }
-}
+//import Foundation
+//import TokamakShim
+// what OK?
+//struct TokamakTestView: View {
+//    var body: some View {
+//        Text("Hello, Tokamak!")
+//    }
+//}

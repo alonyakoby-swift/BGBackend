@@ -25,6 +25,7 @@ let app_migrations: [Migration] = [
     TokenMigration(),
     UserVerificationTokenMigration(),
     UserTeamPivotMigration(),
+    CertificateMigration()
 ]
 
 struct TagMigration { }
@@ -44,3 +45,4 @@ struct UserMigration { }
 struct TokenMigration { }
 struct UserVerificationTokenMigration { }
 struct UserTeamPivotMigration { }
+struct CertificateMigration {}

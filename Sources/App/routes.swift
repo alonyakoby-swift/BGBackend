@@ -20,7 +20,9 @@ func routes(_ app: Application) throws {
         UserController(path: "users"),
         TeamController(path: "teams"),
         CollectionController(path: "collections"),
-        ProductController(path: "products")
+        ProductController(path: "products"),
+        
+        DeepLController()
     ]
     
     app.get("status") { req async -> String in

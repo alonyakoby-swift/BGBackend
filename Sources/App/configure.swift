@@ -44,8 +44,19 @@ public func configure(_ app: Application) throws {
 //    app.middleware.use(DBUser.authenticator())
 //    app.middleware.use(Token.authenticator())
 
+    
     app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     app.passwords.use(.bcrypt)
+
+    let corsConfiguration = CORSMiddleware.Configuration(
+        allowedOrigin: .originBased, // or use .custom("http://localhost:3000") to allow your frontend specifically
+        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH], // Add methods as per your requirement
+        allowedHeaders: [.authorization, .contentType, .accept, .origin, .xRequestedWith],
+        allowCredentials: true
+    )
+    let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+
+    app.middleware.use(corsMiddleware)
 
     // register routes
     try routes(app)

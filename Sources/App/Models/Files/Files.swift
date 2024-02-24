@@ -56,3 +56,14 @@ extension FileMigration: Migration {
         return database.schema(File.schema).delete()
     }
 }
+
+extension File: Mergeable {
+    func merge(from other: File) -> File {
+        let merged = self
+        merged.downloadURL = other.downloadURL
+        merged.fileName = other.fileName
+        merged.fileType = other.fileType
+        merged.fileSizeKB = other.fileSizeKB
+        return merged
+    }
+}
