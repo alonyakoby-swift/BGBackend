@@ -48,15 +48,20 @@ public func configure(_ app: Application) throws {
     app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     app.passwords.use(.bcrypt)
 
+    // Define your CORS configuration
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .originBased, // or use .custom("http://localhost:3000") to allow your frontend specifically
-        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH], // Add methods as per your requirement
-        allowedHeaders: [.authorization, .contentType, .accept, .origin, .xRequestedWith],
-        allowCredentials: true
+        allowedOrigin: .custom("http://localhost:3000"), // Explicitly allow your React frontend
+        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH], // Specify allowed methods
+        allowedHeaders: [.authorization, .contentType, .accept, .origin, .xRequestedWith], // Specify allowed headers
+        allowCredentials: true, // Whether to allow cookies/cross-origin requests
+        exposedHeaders: [.authorization, .contentType] // Optional: Specify headers that browsers are allowed to access
     )
+
+    // Create the CORS middleware with the configuration
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 
-    app.middleware.use(corsMiddleware)
+    // Use the CORS middleware in your application
+    app.middleware.use(corsMiddleware, at: .beginning) // Ensure it's the first middleware to run
 
     // register routes
     try routes(app)
