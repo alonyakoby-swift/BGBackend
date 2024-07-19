@@ -28,7 +28,7 @@ class StandardControllerRepository<T: Model & Content & Mergeable>: DBModelContr
     
     /// Returns paginated items of type `T`.
     ///
-    /// Example: GET "localhost:8080/api/users?page=1&perPage=20"
+    /// Example: GET "localhost:8080/api/users?page=1&per=20"
     func index(req: Request) throws -> EventLoopFuture<Page<T>> {
         return T.query(on: req.db).paginate(for: req)
     }
@@ -133,7 +133,7 @@ class StandardControllerRepository<T: Model & Content & Mergeable>: DBModelContr
     
     /// Paginates items of type `T`.
     ///
-    /// Example: GET "localhost:8080/api/users?page=1&perPage=20&sortField=name&sortDirection=asc"
+    /// Example: GET "localhost:8080/api/users?page=1&per=20&sortField=name&sortDirection=asc"
     func paginate(req: Request) throws -> EventLoopFuture<Page<T>> {
         let pageRequest = try req.query.decode(PageRequest.self)
         return T.query(on: req.db).paginate(for: req)

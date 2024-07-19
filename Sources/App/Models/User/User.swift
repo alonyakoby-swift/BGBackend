@@ -19,7 +19,6 @@ final class User: Model, Content, Codable {
     @Field(key: FieldKeys.lastName) var lastName: String
     @Field(key: FieldKeys.email) var email: String
     @Field(key: FieldKeys.passwordHash) var passwordHash: String
-    @Siblings(through: UserTeamPivot.self, from: \.$user, to: \.$team) var teams: [Team]
     
     struct Public: Content, Codable {
         let id: UUID
@@ -74,26 +73,12 @@ extension UserMigration: Migration {
 
 enum UserType: String, Codable {
     case admin
-    case department
-    case sales
-    case marketing
-    case tradeMarketing
-    case hr
-    case finance
-    case procurement
-    case teamLead
+    case staff
     
     var position: String {
         switch self {
-        case .admin: return "Admin User"
-        case .department: return "Department Head"
-        case .sales: return "Sales Agent"
-        case .marketing: return "Marketeer"
-        case .tradeMarketing: return "Trade Marketeer"
-        case .hr: return "Human Resources"
-        case .finance: return "Finance"
-        case .procurement: return "Procurement"
-        case .teamLead: return "Team Lead"
+            case .admin: return "Admin User"
+            case .staff: return "Staff"
         }
     }
 }

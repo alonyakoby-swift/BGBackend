@@ -51,6 +51,7 @@ class OllamaManager {
     
     enum AIModel: String {
         case mistral = "mistral:latest"
+        case llama3 = "llama3"
     }
 }
 

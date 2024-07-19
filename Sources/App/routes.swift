@@ -11,17 +11,9 @@ import Leaf
 
 func routes(_ app: Application) throws {
     let routes: [RouteCollection] = [
-        CategoryController(path: "categories"),
-        BrandController(path: "brands"),
-        KPIController(path: "kpi"),
-        CustomerController(path: "customers"),
-        VendorController(path: "vendors"),
-        FilesController(path: "files"),
         UserController(path: "users"),
-        TeamController(path: "teams"),
-        CollectionController(path: "collections"),
         ProductController(path: "products"),
-        
+        ExceptionController(path: "exceptions"),
         DeepLController()
     ]
     

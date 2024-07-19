@@ -8,24 +8,26 @@
 
 import Vapor
 
-final class FilesController: RouteCollection {
-    let repository: StandardControllerRepository<File>
-    
+final class ExceptionController: RouteCollection {
+    let repository: StandardControllerRepository<Exception>
+
     init(path: String) {
-        self.repository = StandardControllerRepository<File>(path: path)
+        self.repository = StandardControllerRepository<Exception>(path: path)
     }
-    
+
     func setupRoutes(on app: RoutesBuilder) throws {
         let route = app.grouped(PathComponent(stringLiteral: repository.path))
+        
         route.post(use: repository.create)
         route.post("batch", use: repository.createBatch)
 
         route.get(use: repository.index)
         route.get(":id", use: repository.getbyID)
         route.delete(":id", use: repository.deleteID)
-        
+
         route.patch(":id", use: repository.updateID)
         route.patch("batch", use: repository.updateBatch)
+        
     }
 
     func boot(routes: RoutesBuilder) throws {

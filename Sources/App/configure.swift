@@ -33,6 +33,11 @@ public func configure(_ app: Application) throws {
     
 //    app.jwt.signers.use(.hs256(key: Environment.get(ENV.jwtSecret.key) ?? ENV.jwtSecret.dev_default))
 
+    
+    app.http.server.configuration.hostname = "0.0.0.0"
+    app.http.server.configuration.port = 8080
+
+    
     try app.databases.use(.mongo(connectionString:Environment.get(ENV.databaseURL.key) ?? ENV.databaseURL.dev_default),
                           as: .mongo)
  
@@ -62,6 +67,7 @@ public func configure(_ app: Application) throws {
 
     // Use the CORS middleware in your application
     app.middleware.use(corsMiddleware, at: .beginning) // Ensure it's the first middleware to run
+    let backgroundManager = BackgroundManager(eventLoop: app.eventLoopGroup.next(), db: app.db, authKey: deepLkey)  //Environment.get("DEEPL_API_KEY") ?? "your-deepl-api-key")
 
     // register routes
     try routes(app)
