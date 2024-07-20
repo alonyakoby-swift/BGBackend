@@ -10,7 +10,7 @@ import Fluent
 import Vapor
 
 enum TranslationStatus: String, Codable {
-    case pending, inprogress, completed, failed
+    case pending, formatted, translated, inprogress, completed, failed
 }
 
 final class Translation: Model, Content, Codable {

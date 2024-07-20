@@ -273,7 +273,7 @@ final class ProductController: RouteCollection {
                                 let translations = Language.allCases.map { language in
                                     let translation = Translation(
                                         itemCode: product.CodArticle,
-                                        base: product.Description ?? "",
+                                        base: product.ProductDescriptionEN ?? "",
                                         language: language,
                                         rating: 0,
                                         translation: "",

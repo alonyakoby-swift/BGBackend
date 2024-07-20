@@ -24,7 +24,7 @@ final class BackgroundManager {
 
     /// Starts the watcher as a scheduled task.
     private func startWatching() {
-        self.eventLoop.scheduleRepeatedAsyncTask(initialDelay: .seconds(0), delay: .seconds(10)) { task in
+        self.eventLoop.scheduleRepeatedAsyncTask(initialDelay: .seconds(0), delay: .seconds(5)) { task in
             self.watchPendingTranslations()
                 .flatMapError { error in
                     self.eventLoop.makeSucceededFuture(())
@@ -62,7 +62,7 @@ final class BackgroundManager {
 
             // Update the base property of the translation
             translation.base = formattedText
-            translation.status = .inprogress
+            translation.status = .formatted
             // Save the updated translation
             return translation.save(on: self.db).map {
                 return formattedText
@@ -150,18 +150,30 @@ final class BackgroundManager {
 
         Please review the translations and check their correctness.
 
-        If you find the translation to be accurate and do not have any suggestions for improvement, please indicate this by responding with "The translation is accurate." and provide a rating from 1 to 10, where 10 is the highest level of accuracy.
+        Your response should be formatted as follows:
+
+        Original: \(source)
+        Translation: \(translated.joined(separator: " "))
+
+        Context: [if there is a comment you want to make, it can be blank]
+
+        Rating: X/10 [where X is a number from 1 to 10 indicating the accuracy of the translation]
 
         Example response for accurate translations:
-        "The translation is accurate."
-        Rating: X (where X is a number from 1 to 10 indicating the accuracy of the translation)
+        Original: The quick brown fox jumps over the lazy dog.
+        Translation: Der schnelle braune Fuchs springt über den faulen Hund.
 
-        If you identify any inaccuracies or have suggestions for improving the translation, please provide the corrected version or your suggestions along with a rating from 1 to 10, where 10 represents a perfect translation and 1 indicates significant inaccuracies.
+        Context:
+
+        Rating: 10/10
 
         Example response for translations needing improvement:
-        "Suggested correction: [your suggested correction here]"
-        Rating: Y (where Y is a number from 1 to 10 based on the suggested improvement's accuracy)
+        Original: The quick brown fox jumps over the lazy dog.
+        Translation: Der schnelle braune Fuchs springt über den faulen Hund.
 
+        Context: The translation is mostly accurate, but the word "lazy" could also be translated as "träge".
+
+        Rating: 9/10
         """
 
         let manager = OllamaManager()
@@ -198,8 +210,13 @@ final class BackgroundManager {
             let formattedText = translation.base.formattedText(with: exceptionDicts)
             
             return self.translate(formattedText, from: "EN", to: translation.language.rawValue).flatMap { translatedTexts in
-                let verified = self.verifyTranslation(translation.base, translatedTexts, translation.language.rawValue)
+                // PRE-VERIFICATION
+                translation.status = .translated
+                translation.save(on: self.db)
                 
+                // VERIFICATION
+                let verified = self.verifyTranslation(translation.base, translatedTexts, translation.language.rawValue)
+
                 return verified.flatMap { verificationResponse in
                     if verificationResponse.rating > 7 {
                         translation.translation = translatedTexts.joined(separator: " ")

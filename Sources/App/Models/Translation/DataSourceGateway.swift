@@ -79,16 +79,11 @@ class DataSourceGateway {
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
+        request.timeoutInterval = 900 // Set the timeout interval directly on the request
+
         return URLSession.shared.dataTaskPublisher(for: request)
-            .timeout(DispatchTimeInterval.seconds(900), scheduler: DispatchQueue.main)
-            .tryCatch { error -> URLSession.DataTaskPublisher in
-                guard let urlError = error as? URLError, urlError.code == .timedOut else {
-                    throw error
-                }
-                // Retry logic here, e.g., return the same request
-                return URLSession.shared.dataTaskPublisher(for: request)
-            }
+            .retry(3) // Retry the request up to 3 times
+            .timeout(.seconds(900), scheduler: DispatchQueue.main)
             .tryMap { data, response in
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
@@ -101,6 +96,7 @@ class DataSourceGateway {
             .decode(type: ProductListResponse.self, decoder: JSONDecoder())
             .eraseToAnyPublisher()
     }
+
 
     // Fetch Product Detail by ID
     func fetchProductDetail(by id: String) -> AnyPublisher<Product, Error> {
