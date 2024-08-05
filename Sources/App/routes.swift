@@ -14,6 +14,7 @@ func routes(_ app: Application) throws {
         UserController(path: "users"),
         ProductController(path: "products"),
         ExceptionController(path: "exceptions"),
+        TranslationController(path: "translations"),
         DeepLController()
     ]
     

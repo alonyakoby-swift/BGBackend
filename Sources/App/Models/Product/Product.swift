@@ -60,6 +60,8 @@ final class Product: Model, Content, Codable {
     @Field(key: "AvailableStock") var AvailableStock: Int?
     @Field(key: "Files") var Files: [File]?
 
+    @Children(for: \.$product) var translations: [Translation]
+    
     struct FieldKeys {
         static var id: FieldKey { "id" }
         static var IDArticle: FieldKey { "IDArticle" }
@@ -318,30 +320,6 @@ extension Product: Mergeable {
         merged.Price = other.Price ?? self.Price
         merged.AvailableStock = other.AvailableStock ?? self.AvailableStock
         merged.Files = other.Files ?? self.Files
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         return merged
     }
 }

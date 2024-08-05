@@ -17,20 +17,24 @@ final class Translation: Model, Content, Codable {
     static let schema = "translations"
 
     @ID(key: .id) var id: UUID?
+    @Parent(key: FieldKeys.product) var product: Product
     @Field(key: FieldKeys.itemCode) var itemCode: String
     @Field(key: FieldKeys.base) var base: String
     @Field(key: FieldKeys.language) var language: Language
     @Field(key: FieldKeys.rating) var rating: Int
+    @Field(key: FieldKeys.verification) var verification: String?
     @Field(key: FieldKeys.translation) var translation: String
-    @Field(key: FieldKeys.status) var status: TranslationStatus
+    @OptionalField(key: FieldKeys.status) var status: TranslationStatus?
     
     struct FieldKeys {
+        static var product: FieldKey { "product" }
         static var id: FieldKey { "id" }
         static var itemCode: FieldKey { "itemCode" }
         static var base: FieldKey { "base" }
         static var language: FieldKey { "language" }
         static var rating: FieldKey { "rating" }
         static var translation: FieldKey { "translation" }
+        static var verification: FieldKey { "verification" }
         static var status: FieldKey { "status" }
     }
 
@@ -41,16 +45,19 @@ final class Translation: Model, Content, Codable {
         case language = "language"
         case rating = "rating"
         case translation = "translation"
+        case verification = "verification"
     }
 
     init() { } 
 
-    init(id: UUID? = nil, itemCode: String, base: String, language: Language, rating: Int, translation: String, status: TranslationStatus) {
+    init(id: UUID? = nil, product: Product.IDValue, itemCode: String, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?) {
         self.id = id
+        self.$product.id = product
         self.itemCode = itemCode
         self.base = base
         self.language = language
         self.rating = rating
+        self.verification = verification
         self.translation = translation
         self.status = status
     }
@@ -64,7 +71,9 @@ extension TranslationMigration: Migration {
             .field(Translation.FieldKeys.base, .string, .required)
             .field(Translation.FieldKeys.language, .string, .required)
             .field(Translation.FieldKeys.rating, .int, .required)
-            .field(Translation.FieldKeys.translation, .string, .required)
+            .field(Translation.FieldKeys.translation, .string)
+            .field(Translation.FieldKeys.verification, .string)
+            .field(Translation.FieldKeys.status, .string)
             .create()
     }
 
@@ -77,10 +86,27 @@ extension Translation: Mergeable {
     func merge(from other: Translation) -> Translation {
         var merged = self
         merged.itemCode = other.itemCode
+        merged.$product.id = other.$product.id
         merged.base = other.base
         merged.language = other.language
         merged.rating = other.rating
         merged.translation = other.translation
+        merged.verification = other.verification
+        merged.status = other.status
         return merged
+    }
+}
+
+import Vapor
+
+struct TranslationViewModel: Content {
+    let pending: Int
+    let translated: Int
+    let completed: Int
+
+    func encodeResponse(for request: Vapor.Request) async throws -> Vapor.Response {
+        let response = Response(status: .ok)
+        try response.content.encode(self)
+        return response
     }
 }

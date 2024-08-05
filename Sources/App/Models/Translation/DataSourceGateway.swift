@@ -74,7 +74,8 @@ class DataSourceGateway {
             return Fail(error: URLError(.userAuthenticationRequired)).eraseToAnyPublisher()
         }
         
-        let url = URL(string: "\(baseUrl)/api/articles?with=[\"Files\"]")!
+//        let url = URL(string: "\(baseUrl)/api/articles?with=[\"Files\"]")! // With DOCUMENTS
+        let url = URL(string: "\(baseUrl)/api/articles")!   // Without Documents
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -85,6 +86,8 @@ class DataSourceGateway {
             .retry(3) // Retry the request up to 3 times
             .timeout(.seconds(900), scheduler: DispatchQueue.main)
             .tryMap { data, response in
+                print(response)
+                print(data)
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
                 }

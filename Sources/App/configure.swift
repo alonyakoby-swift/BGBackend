@@ -67,7 +67,8 @@ public func configure(_ app: Application) throws {
 
     // Use the CORS middleware in your application
     app.middleware.use(corsMiddleware, at: .beginning) // Ensure it's the first middleware to run
-    let backgroundManager = BackgroundManager(eventLoop: app.eventLoopGroup.next(), db: app.db, authKey: deepLkey)  //Environment.get("DEEPL_API_KEY") ?? "your-deepl-api-key")
+    let backgroundManager = BackgroundManager(eventLoop: app.eventLoopGroup.next(), db: app.db, authKey: deepLkey) 
+    //Environment.get("DEEPL_API_KEY") ?? "your-deepl-api-key")
 
     // register routes
     try routes(app)
