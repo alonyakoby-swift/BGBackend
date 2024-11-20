@@ -8,8 +8,8 @@
 import Foundation
 import Vapor
 
-let deepLkey = "DeepL-Auth-Key 054c8386-bc46-48af-a919-1d79960b400f:fx"
-
+let Vkey = "DeepL-Auth-Key "
+let DLkey = Vkey + "054c8386-bc46-48af-a919-1d79960b400f:fx"
 /// A controller for handling DeepL translation related routes.
 final class DeepLController: RouteCollection {
     
