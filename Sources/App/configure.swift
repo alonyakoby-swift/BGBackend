@@ -101,7 +101,8 @@ public func configure(_ app: Application) throws {
     try app.queues.use(.mongodb(mongoDatabase))
 
     globalDB = app.db
-    let deepLkey = "DeepL-Auth-Key 054c8386-bc46-48af-a919-1d79960b400f:fx"
+    
+    let deepLkey = Environment.get("DEEPL_API_KEY") ?? "DeepL-Auth-Key 054c8386-bc46-48af-a919-1d79960b400f:fx"
 
     
     // MARK: AI MANAGERS
