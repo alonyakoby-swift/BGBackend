@@ -102,13 +102,14 @@ public func configure(_ app: Application) throws {
 
     globalDB = app.db
     
-    let deepLkey = Environment.get("DEEPL_API_KEY") ?? "DeepL-Auth-Key 054c8386-bc46-48af-a919-1d79960b400f:fx"
-
+    guard let deepLkey = Environment.get("DEEPL_API_KEY") else {
+        return
+    }
     
     // MARK: AI MANAGERS
     
     let ollama = OllamaManager()
-    let openAIApikey = "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"
+    guard let openAIApikey = Environment.get("OPENAI_API_KEY") else { return }
     let openAI = OpenAIManager(apiKey: openAIApikey)
     
     globalTranslationManager = TranslationManager(db: app.db, authKey: deepLkey, aiManager: AIManager(ollama: ollama, openAI: openAI, model: .openAI))
