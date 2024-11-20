@@ -95,7 +95,7 @@ final class DeepLController: RouteCollection {
             // MARK: ERROR
             guard let reqData = req.body.data else { throw Abort(.badRequest)}
             var translateRequest = try JSONDecoder().decode(TranslateRequest.self, from: reqData)
-            translateRequest.text = translateRequest.text.compactMap { return $0.formattedText(with: exceptions)}
+            translateRequest.text = translateRequest.text.compactMap { return $0.formattedText(with: global_exceptions)}
             let requestBody = try JSONEncoder().encode(translateRequest)
 
             print(translateRequest)
@@ -209,7 +209,6 @@ final class DeepLController: RouteCollection {
         return promise.futureResult
     }
 
-
     /// Formats text based on predefined rules.
     /// - Parameter req: The request object.
     /// - Returns: A future string of the formatted text.
@@ -219,7 +218,7 @@ final class DeepLController: RouteCollection {
             let text = formatRequest.text
             
             // Use the formattedText method from the String extension
-            let formattedText = text.formattedText(with: exceptions)
+            let formattedText = text.formattedText(with: global_exceptions)
             
             // Return the formatted text wrapped in a future
             return req.eventLoop.future(formattedText)
@@ -244,7 +243,6 @@ struct DeepLSupportedLanguage: Codable, Content {
     var supports_formality: Bool // Assuming this should be a Bool based on the naming
 }
 
-
 struct FormatTextRequest: Codable {
     var text: String
 }
@@ -261,7 +259,6 @@ struct TranslateResponse: Codable {
     var translated: String
 }
  
-
 struct DeepLTranslateResponse: Codable {
     var translations: [Translation]?
 
@@ -270,7 +267,6 @@ struct DeepLTranslateResponse: Codable {
         var text: String
     }
 }
-
 
 struct TranslationVerificationRequest: Codable {
     let source: String
@@ -316,27 +312,25 @@ extension String {
             }
         }
 
-        print("Formatted from \(self) --> \(formattedText)")
+//        print("Formatted from \(self) --> \(formattedText)")
         return formattedText
     }
     
     func extractRating() -> Int? {
-        let pattern = "Rating: (\\d+)"
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: self, range: NSRange(location: 0, length: self.utf16.count)) else {
+        let pattern = "Rating:\\s*(\\d+)/10"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: self, range: NSRange(location: 0, length: self.utf16.count)),
+              let range = Range(match.range(at: 1), in: self),
+              let rating = Int(self[range])
+        else {
             return nil
         }
-        
-        if let range = Range(match.range(at: 1), in: self) {
-            return Int(self[range])
-        }
-        return nil
+        return rating
     }
 
 }
 
-    
-var exceptions: [[String: String]] {
+var global_exceptions: [[String: String]] =
     [
         ["replace": "W/", "with": "WITH"],
         // MATERIALS
@@ -362,5 +356,4 @@ var exceptions: [[String: String]] {
         ["replace": "BE", "with": "BENNETON"],
         ["replace": "SH", "with": "SWISSHOUSE"],
         ["replace": "BF", "with": "BRUNCHFIELD"],
-    ]
-}
+]

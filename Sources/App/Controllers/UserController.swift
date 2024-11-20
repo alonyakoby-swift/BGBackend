@@ -10,7 +10,7 @@ import Fluent
 
 final class UserController: RouteCollection {
     let repository: StandardControllerRepository<User>
-    
+          
     init(path: String) {
         self.repository = StandardControllerRepository<User>(path: path)
     }
@@ -39,7 +39,6 @@ final class UserController: RouteCollection {
             .first()
             .map { $0 != nil }
     }
-    
     
     func signup(req: Request) throws -> EventLoopFuture<NewSession> {
         let userSignup = try req.content.decode(UserSignup.self)
@@ -101,7 +100,6 @@ final class UserController: RouteCollection {
         return EventLoopFuture.whenAllSucceed(signupFutures, on: req.eventLoop)
     }
 
-    
     func login(req: Request) throws -> EventLoopFuture<NewSession> {
         let user = try req.auth.require(User.self)
         let token = try user.createToken(source: .login)
@@ -110,13 +108,6 @@ final class UserController: RouteCollection {
             NewSession(token: token.value, user: try user.asPublic())
         }
     }
-    
-    /*
-     TODO: [X]
-     [] USER WITH TEAM LIST
-     [] USER WITH LIST OF ALL TICKETS
-     [] UPDATE CLEARANCE LEVEL
-     */
 }
 
 extension User: Mergeable {

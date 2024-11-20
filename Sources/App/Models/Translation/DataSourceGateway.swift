@@ -6,7 +6,6 @@ class DataSourceGateway {
     private let baseUrl = "https://webservicefiles-bergner.com"
     var accessToken: String?
     private var cancellables = Set<AnyCancellable>()
-
     // Authentication
     func authenticate(username: String, password: String) -> AnyPublisher<Void, Error> {
         let url = URL(string: "\(baseUrl)/oauth/token")!
@@ -37,7 +36,8 @@ class DataSourceGateway {
             .decode(type: AuthResponse.self, decoder: JSONDecoder())
             .map { authResponse in
                 self.accessToken = authResponse.access_token
-                print("Authenticated successfully: \(authResponse)")
+//                print("Authenticated successfully: \(authResponse)")
+                print("Authenticated successfully")
             }
             .eraseToAnyPublisher()
     }

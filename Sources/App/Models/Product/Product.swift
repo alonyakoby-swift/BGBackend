@@ -333,4 +333,38 @@ extension Product {
             self.Price == other.Price &&
             self.AvailableStock == other.AvailableStock
     }
+    
+    func promptText(language: Language, translatedText: String) -> String {
+        return """
+                    I have translated this string:
+                    \(self.ProductDescriptionEN ?? "Error in Fetching Description")
+                    
+                    To this (in \(language.name)):
+                    \(translatedText)
+                    
+                    Please review the translations and check their correctness.
+
+                    If you find the translation to be accurate and do not have any suggestions for improvement, please indicate this by responding with "The translation is accurate." and provide a rating from 1 to 10, where 10 is the highest level of accuracy.
+
+                    Example response for accurate translations:
+                    "The translation is accurate." (Also please make sure to in addition to that string add comments if there is something that may be translated for ex: as the name of the Collection is "BG NATURAL" and it translated to "BG NATÜRLICH" which was not intended. 
+                    Rating: X (where X is a number from 1 to 10 indicating the accuracy of the translation)
+
+                    If you identify any inaccuracies or have suggestions for improving the translation, please provide the corrected version or your suggestions along with a rating from 1 to 10, where 10 represents a perfect translation and 1 indicates significant inaccuracies.
+
+                    Example response for translations needing improvement:
+                    "Suggested correction: [your suggested correction here]"
+                    Rating: Y (where Y is a number from 1 to 10 based on the suggested improvement's accuracy)
+        """
+    }
+    
+    func formatText(manager: TranslationManagerProtocol) async {
+        if let id = self.id {
+            do {
+                try await manager.formatText(productID: id)
+            } catch {
+                
+            }
+        }
+    }
 }

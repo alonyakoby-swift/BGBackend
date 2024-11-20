@@ -5,10 +5,14 @@
 //  All rights reserved.
 //
 
+import Vapor
 import Fluent
 import FluentMongoDriver
 import Leaf
-import Vapor
+//import Smtp
+import Queues
+import QueuesMongoDriver
+import MongoKitten
 //import JWT
 
 extension String {
@@ -53,23 +57,100 @@ public func configure(_ app: Application) throws {
     app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     app.passwords.use(.bcrypt)
 
+    // Configure multiple allowed origins
+    let allowedOrigins: [String] = [
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:4000",
+        "http://localhost:4001",
+        "http://localhost:5500",
+        "http://localhost:4500"
+    ]
+
     // Define your CORS configuration
-    let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .custom("http://localhost:3000"), // Explicitly allow your React frontend
-        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH], // Specify allowed methods
-        allowedHeaders: [.authorization, .contentType, .accept, .origin, .xRequestedWith], // Specify allowed headers
-        allowCredentials: true, // Whether to allow cookies/cross-origin requests
-        exposedHeaders: [.authorization, .contentType] // Optional: Specify headers that browsers are allowed to access
+    let corsMiddleware = CustomCORSMiddleware(
+        allowedOrigins: allowedOrigins,
+        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+        allowedHeaders: [
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+            "User-Agent",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform"
+        ],
+        allowCredentials: true
     )
 
     // Create the CORS middleware with the configuration
-    let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+    app.middleware.use(ErrorMiddleware.default(environment: app.environment))
+    app.middleware.use(corsMiddleware) // Move this after ErrorMiddleware
 
     // Use the CORS middleware in your application
     app.middleware.use(corsMiddleware, at: .beginning) // Ensure it's the first middleware to run
-    let backgroundManager = BackgroundManager(eventLoop: app.eventLoopGroup.next(), db: app.db, authKey: deepLkey) 
+//    let backgroundManager = BackgroundManager(eventLoop: app.eventLoopGroup.next(), db: app.db, authKey: deepLkey) 
     //Environment.get("DEEPL_API_KEY") ?? "your-deepl-api-key")
+
+    let mongoConnectionString = Environment.get(ENV.databaseURL.key) ?? ENV.databaseURL.dev_default
+    let mongoDatabase = try MongoDatabase.connect(mongoConnectionString, on: app.eventLoopGroup.next()).wait()
+
+    // Setup Queues with MongoDB driver
+    try app.queues.use(.mongodb(mongoDatabase))
+
+    globalDB = app.db
+    let deepLkey = "DeepL-Auth-Key 054c8386-bc46-48af-a919-1d79960b400f:fx"
+
+    
+    // MARK: AI MANAGERS
+    
+    let ollama = OllamaManager()
+    let openAIApikey = "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"
+    let openAI = OpenAIManager(apiKey: openAIApikey)
+    
+    globalTranslationManager = TranslationManager(db: app.db, authKey: deepLkey, aiManager: AIManager(ollama: ollama, openAI: openAI, model: .openAI))
+
+    app.queues.schedule(TestJob())
+       .weekly()
+       .on(.monday)
+       .at(8,0)
+
+    // Start the scheduled jobs
+    try app.queues.startScheduledJobs()
 
     // register routes
     try routes(app)
 }
+
+var globalDB: Database?
+
+struct TestJob: AsyncScheduledJob {
+    func run(context: QueueContext) async throws {
+        context.logger.info("Test Job is running every second.")
+        print("Test Job is running every second.")
+    }
+}
+
+/* struct UnlockPlayerJob: AsyncScheduledJob {
+ func run(context: QueueContext) async throws {
+     context.logger.info("Unlock Job is running.")
+     print("Unlock Job is running.")
+
+     // Job logic
+     // Get all the players with eligibility Gesperrt, Check if their blockdate has passed, if yes set their eligibility to Spielberechtigt
+     let players = try await Player.query(on: context.application.db)
+         .filter(\.$eligibility == .Gesperrt)
+         .filter(\.$blockdate <= Date())
+         .all()
+     
+     for player in players {
+         player.eligibility = .Spielberechtigt
+         try await player.save(on: context.application.db)
+         context.logger.info("Player \(player.name) eligibility updated to Spielberechtigt.")
+     }
+ }
+} */
+
+

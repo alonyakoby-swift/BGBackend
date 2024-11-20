@@ -24,6 +24,9 @@ final class TranslationController: RouteCollection {
 
         route.patch(":id", use: repository.updateID)
         route.patch("batch", use: repository.updateBatch)
+        route.get(":id", "verify", use: verifyTranslation)
+        route.get(":id", "translate", ":productID", ":lang", use: translateProductDescription)
+
     }
 
     func boot(routes: RoutesBuilder) throws {
@@ -57,4 +60,44 @@ final class TranslationController: RouteCollection {
             .filter(\.$itemCode == itemCode)
             .all()
     }
+    
+    func verifyTranslation(req: Request) async throws -> HTTPStatus {
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "Missing translation ID")
+        }
+        
+        guard let translation = try await Translation.find(id, on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        if let manager = globalTranslationManager {
+            await translation.verify(manager: manager)
+        }
+        return .ok
+    }
+
+    func translateProductDescription(req: Request) async throws -> HTTPStatus {
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "Translation product ID")
+        }
+        
+        guard let languageString = req.parameters.get("lang", as: String.self),
+              let language = Language(rawValue: languageString) else {
+            throw Abort(.badRequest, reason: "Invalid language ID")
+        }
+
+        guard let productID = req.parameters.get("productID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "Missing product ID")
+        }
+
+        guard let translation = try await Translation.find(id, on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        if let manager = globalTranslationManager {
+            await translation.translate(manager: manager, toLanguage: language, productID: productID)
+        }
+        return .ok
+    }
+
 }

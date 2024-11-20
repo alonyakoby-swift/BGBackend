@@ -53,3 +53,9 @@ extension Exception: Mergeable {
         return merged
     }
 }
+
+extension Exception {
+    func asDictionary() -> [String: String] {
+        return [self.original: self.replace]
+    }
+}

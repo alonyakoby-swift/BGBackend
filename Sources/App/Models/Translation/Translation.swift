@@ -25,6 +25,7 @@ final class Translation: Model, Content, Codable {
     @Field(key: FieldKeys.verification) var verification: String?
     @Field(key: FieldKeys.translation) var translation: String
     @OptionalField(key: FieldKeys.status) var status: TranslationStatus?
+    @OptionalField(key: FieldKeys.prompt) var prompt: String?
     
     struct FieldKeys {
         static var product: FieldKey { "product" }
@@ -36,6 +37,7 @@ final class Translation: Model, Content, Codable {
         static var translation: FieldKey { "translation" }
         static var verification: FieldKey { "verification" }
         static var status: FieldKey { "status" }
+        static var prompt: FieldKey { "prompt" }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -50,7 +52,7 @@ final class Translation: Model, Content, Codable {
 
     init() { } 
 
-    init(id: UUID? = nil, product: Product.IDValue, itemCode: String, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?) {
+    init(id: UUID? = nil, product: Product.IDValue, itemCode: String, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil) {
         self.id = id
         self.$product.id = product
         self.itemCode = itemCode
@@ -60,7 +62,29 @@ final class Translation: Model, Content, Codable {
         self.verification = verification
         self.translation = translation
         self.status = status
+        self.prompt = prompt
     }
+    
+    func verify(manager: TranslationManagerProtocol) async {
+        if let id = self.id {
+            do {
+                try await manager.verifyText(translationID: id)
+            } catch {
+                
+            }
+        }
+    }
+    
+    func translate(manager: TranslationManagerProtocol, toLanguage: Language, productID: UUID) async {
+        if let id = self.id {
+            do {
+                try await manager.translateText(translationID: id, toLanguage: toLanguage, productID: productID)
+            } catch {
+                
+            }
+        }
+    }
+
 }
 
 extension TranslationMigration: Migration {
@@ -74,6 +98,7 @@ extension TranslationMigration: Migration {
             .field(Translation.FieldKeys.translation, .string)
             .field(Translation.FieldKeys.verification, .string)
             .field(Translation.FieldKeys.status, .string)
+            .field(Translation.FieldKeys.prompt, .string)
             .create()
     }
 
@@ -93,6 +118,7 @@ extension Translation: Mergeable {
         merged.translation = other.translation
         merged.verification = other.verification
         merged.status = other.status
+        merged.prompt = other.prompt
         return merged
     }
 }
