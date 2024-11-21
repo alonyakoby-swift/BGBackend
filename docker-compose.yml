@@ -20,6 +20,8 @@
 
 # Docker Compose file for Vapor App with MongoDB
 
+version: "3.9"
+
 volumes:
   db_data:
 
