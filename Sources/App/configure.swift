@@ -1,9 +1,3 @@
-//
-//  Copyright © 2023.
-//  Alon Yakobichvili
-//  All rights reserved.
-//
-
 import Vapor
 import Fluent
 import FluentMongoDriver
@@ -11,21 +5,12 @@ import Leaf
 import Queues
 import QueuesMongoDriver
 import MongoKitten
-import DotEnv
 
 extension String {
     var bytes: [UInt8] { .init(self.utf8) }
 }
 
 public func configure(_ app: Application) throws {
-    // MARK: - Load Environment Variables
-    let path = "\(app.directory.workingDirectory).env"
-    do {
-        try DotEnv.load(path: path)
-    } catch {
-        fatalError("Error loading .env file at path \(path): \(error)")
-    }
-
     // MARK: - JSON Encoder/Decoder Configuration
     let encoder = JSONEncoder()
     encoder.keyEncodingStrategy = .convertToSnakeCase
