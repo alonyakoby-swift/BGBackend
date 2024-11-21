@@ -19,6 +19,7 @@ RUN swift package resolve
 # Copy entire repo into container
 COPY . .
 
+# Install required libraries
 RUN apt-get update && apt-get install -y openssl libssl-dev
 
 # Build everything, with optimizations
@@ -42,13 +43,13 @@ RUN [ -d /build/Resources ] && { mv /build/Resources ./Resources && chmod -R a-w
 # ================================
 FROM ubuntu:jammy
 
-# Update system packages
+# Install required runtime libraries
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
     && apt-get -q install -y \
       ca-certificates \
       tzdata \
+      libcurl4 \
     && rm -r /var/lib/apt/lists/*
 
 # Create a vapor user and group with /app as its home directory
