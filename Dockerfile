@@ -3,10 +3,11 @@
 # ================================
 FROM swift:5.8-jammy as build
 
-# Install OS updates and, if needed, sqlite3
+# Install OS updates and required libraries
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
     && apt-get -q dist-upgrade -y \
+    && apt-get install -y openssl libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up a build area
@@ -19,10 +20,7 @@ RUN swift package resolve
 # Copy entire repo into container
 COPY . .
 
-# Install required libraries
-RUN apt-get update && apt-get install -y openssl libssl-dev
-
-# Build everything, with optimizations
+# Build everything with optimizations
 RUN swift build -c release --static-swift-stdlib
 
 # Switch to the staging area
@@ -58,7 +56,7 @@ RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app
 # Switch to the new home directory
 WORKDIR /app
 
-# Copy built executable and any staged resources from builder
+# Copy built executable and staged resources from builder
 COPY --from=build --chown=vapor:vapor /staging /app
 
 # Ensure all further commands run as the vapor user
