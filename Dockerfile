@@ -16,6 +16,8 @@ WORKDIR /build
 # First, configure GitHub authentication for private repositories
 ARG GITHUB_USERNAME
 ARG GITHUB_TOKEN
+
+# **Security Note:** Be cautious when including credentials in the image
 RUN git config --global url."https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # Resolve dependencies
@@ -25,8 +27,11 @@ RUN swift package resolve
 # Copy entire repo into the container
 COPY . .
 
-# Build everything, with optimizations
-RUN swift build -c release --static-swift-stdlib
+# **Adjust Build Command to Reduce Memory Usage**
+RUN swift build -c release --static-swift-stdlib -j1 --disable-whole-module-optimization
+
+# Clean up Git credentials to avoid leaving them in the image
+RUN git config --global --unset url."https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/".insteadOf
 
 # Prepare the staging area
 WORKDIR /staging
