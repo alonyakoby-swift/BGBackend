@@ -1,6 +1,11 @@
 import Vapor
 import Fluent
+#if canImport(Combine)
 import Combine
+#else
+import OpenCombine
+import OpenCombineFoundation
+#endif
 
 final class ProductController: RouteCollection {
     let repository: StandardControllerRepository<Product>

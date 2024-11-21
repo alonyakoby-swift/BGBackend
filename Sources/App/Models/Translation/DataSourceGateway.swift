@@ -1,6 +1,11 @@
 import Vapor
 import Foundation
+#if canImport(Combine)
 import Combine
+#else
+import OpenCombine
+import OpenCombineFoundation
+#endif
 
 class DataSourceGateway {
     private let baseUrl = "https://webservicefiles-bergner.com"

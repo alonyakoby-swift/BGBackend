@@ -1,10 +1,8 @@
 import Vapor
 import Fluent
-import Combine
 
 /// Manages background tasks related to translations.
 final class BackgroundManager {
-    private var cancellables = Set<AnyCancellable>()
     private let eventLoop: EventLoop
     private let db: Database
     private let authKey: String
