@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Vapor
 
 var globalDeepLkey: String?
@@ -256,7 +259,7 @@ struct TranslateRequest: Codable {
     var target_lang: String
     var context: String?
     var text: [String]
-    let preserve_formatting = true
+    var preserve_formatting = true
 }
 
 struct TranslateResponse: Codable {

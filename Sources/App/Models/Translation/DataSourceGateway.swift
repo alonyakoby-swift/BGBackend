@@ -1,5 +1,9 @@
 import Vapor
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 #if canImport(Combine)
 import Combine
 #else
@@ -11,6 +15,7 @@ class DataSourceGateway {
     private let baseUrl = "https://webservicefiles-bergner.com"
     var accessToken: String?
     private var cancellables = Set<AnyCancellable>()
+    
     // Authentication
     func authenticate(username: String, password: String) -> AnyPublisher<Void, Error> {
         let url = URL(string: "\(baseUrl)/oauth/token")!
@@ -41,7 +46,6 @@ class DataSourceGateway {
             .decode(type: AuthResponse.self, decoder: JSONDecoder())
             .map { authResponse in
                 self.accessToken = authResponse.access_token
-//                print("Authenticated successfully: \(authResponse)")
                 print("Authenticated successfully")
             }
             .eraseToAnyPublisher()
@@ -79,8 +83,7 @@ class DataSourceGateway {
             return Fail(error: URLError(.userAuthenticationRequired)).eraseToAnyPublisher()
         }
         
-//        let url = URL(string: "\(baseUrl)/api/articles?with=[\"Files\"]")! // With DOCUMENTS
-        let url = URL(string: "\(baseUrl)/api/articles")!   // Without Documents
+        let url = URL(string: "\(baseUrl)/api/articles")! // Without Documents
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -91,8 +94,6 @@ class DataSourceGateway {
             .retry(3) // Retry the request up to 3 times
             .timeout(.seconds(900), scheduler: DispatchQueue.main)
             .tryMap { data, response in
-                print(response)
-                print(data)
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
                 }
@@ -104,7 +105,6 @@ class DataSourceGateway {
             .decode(type: ProductListResponse.self, decoder: JSONDecoder())
             .eraseToAnyPublisher()
     }
-
 
     // Fetch Product Detail by ID
     func fetchProductDetail(by id: String) -> AnyPublisher<Product, Error> {
@@ -123,7 +123,6 @@ class DataSourceGateway {
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
                 }
-                print("Fetch product detail by ID status code: \(httpResponse.statusCode)")
                 guard httpResponse.statusCode == 200 else {
                     throw URLError(.badServerResponse)
                 }
@@ -136,7 +135,7 @@ class DataSourceGateway {
             }
             .eraseToAnyPublisher()
     }
-    
+
     // Fetch Product Detail by ProductCode
     func fetchProductCode(by code: String) -> AnyPublisher<Product, Error> {
         guard let token = accessToken else {
@@ -154,7 +153,6 @@ class DataSourceGateway {
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
                 }
-                print("Fetch product detail by code status code: \(httpResponse.statusCode)")
                 guard httpResponse.statusCode == 200 else {
                     throw URLError(.badServerResponse)
                 }
@@ -168,7 +166,6 @@ class DataSourceGateway {
     }
 }
 
-// Models
 // Models
 struct AuthResponse: Decodable {
     let token_type: String

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 class OllamaManager {
     let baseURL = "http://localhost:11434/"
