@@ -28,7 +28,7 @@ RUN swift package resolve
 COPY . .
 
 # **Adjust Build Command to Reduce Memory Usage**
-RUN swift build -c release --static-swift-stdlib -j1 --disable-whole-module-optimization
+RUN swift build -c release --static-swift-stdlib -j 1 --disable-whole-module-optimization
 
 # Clean up Git credentials to avoid leaving them in the image
 RUN git config --global --unset url."https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/".insteadOf
