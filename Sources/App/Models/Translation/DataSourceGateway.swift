@@ -82,7 +82,7 @@ class DataSourceGateway {
         guard let token = accessToken else {
             return Fail(error: URLError(.userAuthenticationRequired)).eraseToAnyPublisher()
         }
-        
+
         let url = URL(string: "\(baseUrl)/api/articles")! // Without Documents
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -92,7 +92,7 @@ class DataSourceGateway {
 
         return URLSession.shared.dataTaskPublisher(for: request)
             .retry(3) // Retry the request up to 3 times
-            .timeout(.seconds(900), scheduler: DispatchQueue.main)
+            .timeout(.seconds(900), scheduler: RunLoop.main)
             .tryMap { data, response in
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
@@ -105,6 +105,7 @@ class DataSourceGateway {
             .decode(type: ProductListResponse.self, decoder: JSONDecoder())
             .eraseToAnyPublisher()
     }
+
 
     // Fetch Product Detail by ID
     func fetchProductDetail(by id: String) -> AnyPublisher<Product, Error> {

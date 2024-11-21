@@ -48,10 +48,6 @@ final class TranslationManager: TranslationManagerProtocol {
     }
     
     func translateText(translationID: UUID, toLanguage: Language, productID: UUID) async throws {
-        guard let url = URL(string: "https://api-free.deepl.com/v2/translate") else {
-            throw Abort(.badRequest, reason: "Invalid URL")
-        }
-
         // Fetch all exceptions (if any)
         let exceptions = try await Exception.query(on: db).all()
         let exceptionDict = exceptions.reduce(into: [String: String]()) { dict, exception in
@@ -79,66 +75,52 @@ final class TranslationManager: TranslationManagerProtocol {
             throw Abort(.internalServerError, reason: "Failed to encode request body")
         }
 
-        // Debugging: Print the request body
-        print("Request Body String: \(bodyString)")
-
         // Prepare the request
+        guard let url = URL(string: "https://api-free.deepl.com/v2/translate") else {
+            throw Abort(.badRequest, reason: "Invalid URL")
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.httpBody = bodyData
-
-        // Set the Authorization header
         request.addValue(authKey, forHTTPHeaderField: "Authorization")
 
-        // Debugging: Print the full request
-        print("Request URL: \(request.url?.absoluteString ?? "No URL")")
-        print("Request Method: \(request.httpMethod ?? "No Method")")
-        print("Authorization Header: \(authKey)")
-        print("Request Headers: \(request.allHTTPHeaderFields ?? [:])")
-        print("Request Body: \(String(data: request.httpBody ?? Data(), encoding: .utf8) ?? "No Body")")
-
-        // Perform the request using async/await
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            // Check the response status code
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                if let errorMessage = String(data: data, encoding: .utf8) {
-                    throw Abort(.internalServerError, reason: "DeepL API error: \(errorMessage)")
+        // Perform the request using a closure-based method wrapped in withCheckedThrowingContinuation
+        let (data, response): (Data, URLResponse) = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(Data, URLResponse), Error>) in
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let data = data, let response = response {
+                    continuation.resume(returning: (data, response))
                 } else {
-                    throw Abort(.internalServerError, reason: "DeepL API error: Unknown error")
+                    continuation.resume(throwing: URLError(.badServerResponse))
                 }
-            }
-
-            // Debugging: Print the response data as string
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("Response Body: \(responseString)")
-            } else {
-                print("Failed to decode response data as UTF-8 string")
-            }
-
-            // Decode the response
-            let deeplResponse = try JSONDecoder().decode(DeepLTranslateResponse.self, from: data)
-            guard let translations = deeplResponse.translations, !translations.isEmpty else {
-                throw Abort(.internalServerError, reason: "No translations received from DeepL API")
-            }
-
-            // Update the existing translation
-            translationDB.translation = translations.first?.text ?? "Error Translating"
-            translationDB.status = .translated
-            translationDB.language = toLanguage
-
-            // Save the updated translation
-            try await translationDB.save(on: self.db)
-
-        } catch {
-            // Handle any errors
-            print("Error performing translation request: \(error)")
-            throw error
+            }.resume()
         }
-    }
 
+        // Check the response status code
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            if let errorMessage = String(data: data, encoding: .utf8) {
+                throw Abort(.internalServerError, reason: "DeepL API error: \(errorMessage)")
+            } else {
+                throw Abort(.internalServerError, reason: "DeepL API error: Unknown error")
+            }
+        }
+
+        // Decode the response
+        let deeplResponse = try JSONDecoder().decode(DeepLTranslateResponse.self, from: data)
+        guard let translations = deeplResponse.translations, !translations.isEmpty else {
+            throw Abort(.internalServerError, reason: "No translations received from DeepL API")
+        }
+
+        // Update the existing translation
+        translationDB.translation = translations.first?.text ?? "Error Translating"
+        translationDB.status = .translated
+        translationDB.language = toLanguage
+
+        // Save the updated translation
+        try await translationDB.save(on: self.db)
+    }
 
     // Helper function to mask the API key in logs
     private func maskAPIKey(_ authHeader: String) -> String {
