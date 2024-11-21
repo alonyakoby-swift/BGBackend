@@ -8,15 +8,19 @@
 import Foundation
 import Vapor
 
-let Vkey = "DeepL-Auth-Key "
-let DLkey = Vkey + "054c8386-bc46-48af-a919-1d79960b400f:fx"
+var globalDeepLkey: String?
+
 /// A controller for handling DeepL translation related routes.
 final class DeepLController: RouteCollection {
     
     // MARK: - Properties
     
     /// DeepL API authorization key.
-    let authKey = deepLkey
+    let authKey: String
+    
+    init(authKey: String) {
+        self.authKey = authKey
+    }
     
     /// Sets up routes for the application.
     /// - Parameter app: The application's `RoutesBuilder` to which routes will be added.

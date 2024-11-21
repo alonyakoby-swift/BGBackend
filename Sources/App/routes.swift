@@ -15,7 +15,7 @@ func routes(_ app: Application) throws {
         ProductController(path: "products"),
         ExceptionController(path: "exceptions"),
         TranslationController(path: "translations"),
-        DeepLController()
+        DeepLController(authKey: globalDeepLkey ?? "")
     ]
     
     app.get("status") { req async -> String in

@@ -17,8 +17,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/leaf.git", from: "4.2.4"),
         .package(url: "https://github.com/Mikroservices/Smtp.git", from: "3.0.0"),
         .package(url: "https://github.com/vapor-community/queues-mongo-driver.git", from: "1.0.0"),
-        .package(url: "https://github.com/SwiftOnTheServer/dotenv-swift.git", from: "5.2.0"),
-
+        .package(url: "https://github.com/swiftpackages/DotEnv.git", from: "3.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -27,7 +26,7 @@ let package = Package(
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentMongoDriver", package: "fluent-mongo-driver"),
                 .product(name: "Leaf", package: "leaf"),
-                .product(name: "DotenvSwift", package: "dotenv-swift"),
+                .product(name: "DotEnv", package: "DotEnv"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Smtp", package: "Smtp"),
                 .product(name: "QueuesMongoDriver", package: "queues-mongo-driver"),

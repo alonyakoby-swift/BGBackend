@@ -18,7 +18,7 @@ final class ProductController: RouteCollection {
         route.post(use: repository.create)
         route.post("batch", use: repository.createBatch)
 
-        route.get(use: repository.index)
+        route.get(use: index)
         route.get(":id", use: getItemByIDWithTranslations)
         route.delete(":id", use: repository.deleteID)
 
@@ -33,6 +33,9 @@ final class ProductController: RouteCollection {
         
         route.get("searchbyItemCode", ":itemCode", use: searchByItemCode)
         route.get(":id", "format", use: formatProductDescription)
+        
+        route.get("search", use: search)
+
     }
 
     func boot(routes: RoutesBuilder) throws {
@@ -308,6 +311,26 @@ final class ProductController: RouteCollection {
         }
         return .ok
     }
+    
+    func search(req: Request) -> EventLoopFuture<[Product]> {
+        guard let searchString = req.query[String.self, at: "query"] else {
+            return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Missing search query"))
+        }
+
+        return Product.query(on: req.db)
+            .group(.or) { group in
+                group.filter(\.$CodArticle == searchString)
+                group.filter(\.$Description ~~ searchString)
+            }
+            .all()
+    }
+    
+    func index(req: Request) -> EventLoopFuture<Page<Product>> {
+        return Product.query(on: req.db)
+            .sort(\.$CodArticle, .ascending)
+            .paginate(for: req)
+    }
+
 }
 
 extension Array where Element == String {
