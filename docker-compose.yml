@@ -3,7 +3,7 @@ volumes:
 
 x-shared_environment: &shared_environment
   LOG_LEVEL: ${LOG_LEVEL:-debug}
-  DATABASE_URL: mongodb://db:27017/bergner_database
+  DATABASE_URL: mongodb+srv://doadmin:XEd4U039567rTs8@db-mongodb-fra1-89105-e87583ac.mongo.ondigitalocean.com/admin
   DEEPL_API_KEY: ${DEEPL_API_KEY}
   OPENAI_API_KEY: ${OPENAI_API_KEY}
 
@@ -15,6 +15,11 @@ services:
     restart: unless-stopped
     ports:
       - '27017:27017'
+    healthcheck:
+      test: echo 'db.stats()' | mongo --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   app:
     image: bergnerbackend:latest
@@ -24,7 +29,7 @@ services:
       <<: *shared_environment
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
     ports:
       - '8080:8080'
     command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
@@ -37,7 +42,7 @@ services:
       <<: *shared_environment
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
     command: ["migrate", "--yes"]
     deploy:
       replicas: 0
@@ -50,7 +55,7 @@ services:
       <<: *shared_environment
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
     command: ["migrate", "--revert", "--yes"]
     deploy:
       replicas: 0
@@ -63,7 +68,7 @@ services:
       <<: *shared_environment
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
     command: ["queues", "--scheduled"]
     deploy:
       replicas: 1
