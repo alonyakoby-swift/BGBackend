@@ -67,3 +67,11 @@ services:
     command: ["queues", "--scheduled"]
     deploy:
       replicas: 1
+
+  docker-compose-setup:
+    image: docker:stable
+    command: ["sh", "-c", "apk add --no-cache docker-compose && docker-compose version"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      replicas: 0
