@@ -1,48 +1,13 @@
-# Docker Compose file for Vapor
-#
-# Install Docker on your system to run and test
-# your Vapor app in a production-like environment.
-#
-# Note: This file is intended for testing and does not
-# implement best practices for a production deployment.
-#
-# Learn more: https://docs.docker.com/compose/reference/
-#
-#   Build images: docker-compose build
-#      Start app: docker-compose up app
-# Start database: docker-compose up db
-# Run migrations: docker-compose run migrate
-#       Stop all: docker-compose down (add -v to wipe db)
-#
-# Docker Compose file for Vapor
-
-# Docker Compose file for Vapor App with MongoDB
-
-# Docker Compose file for Vapor App with MongoDB
-
-version: "3.9"
-
 volumes:
   db_data:
 
 x-shared_environment: &shared_environment
   LOG_LEVEL: ${LOG_LEVEL:-debug}
   DATABASE_URL: mongodb://db:27017/bergner_database
+  DEEPL_API_KEY: ${DEEPL_API_KEY}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 services:
-  app:
-    build:
-      context: .
-    environment:
-      <<: *shared_environment
-    depends_on:
-      - db
-    ports:
-      - '8080:8080'
-    command: >
-      sh -c "until nc -z db 27017; do echo 'Waiting for MongoDB...'; sleep 1; done;
-      ./App serve --env production --hostname 0.0.0.0 --port 8080"
-
   db:
     image: mongo:latest
     volumes:
@@ -50,8 +15,55 @@ services:
     restart: unless-stopped
     ports:
       - '27017:27017'
-    healthcheck:
-      test: "mongo --eval 'db.runCommand({ping: 1})' || exit 1"
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
+  app:
+    image: bergnerbackend:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      db:
+        condition: service_started
+    ports:
+      - '8080:8080'
+    command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+
+  migrate:
+    image: bergnerbackend:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      db:
+        condition: service_started
+    command: ["migrate", "--yes"]
+    deploy:
+      replicas: 0
+
+  revert:
+    image: bergnerbackend:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      db:
+        condition: service_started
+    command: ["migrate", "--revert", "--yes"]
+    deploy:
+      replicas: 0
+
+  queues:
+    image: bergnerbackend:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      db:
+        condition: service_started
+    command: ["queues", "--scheduled"]
+    deploy:
+      replicas: 1
