@@ -24,10 +24,20 @@ public func configure(_ app: Application) throws {
     app.http.server.configuration.port = Int(Environment.get("PORT") ?? "8080") ?? 8080
 
     // MARK: - Database Configuration
-    guard let databaseURL = Environment.get("DATABASE_URL") else {
+    guard let databaseURL = Environment.get("CONNECTION_STRING") else {
         fatalError("DATABASE_URL not set in environment variables")
     }
-    try app.databases.use(.mongo(connectionString: databaseURL), as: .mongo)
+    
+    // Ensure proper MongoDB connection URI format
+    let sanitizedDatabaseURL = databaseURL.replacingOccurrences(of: "<PASSWORD>", with: "REDACTED")
+    app.logger.info("Connecting to MongoDB at: \(sanitizedDatabaseURL)")
+    
+    var mongoConnectionString = databaseURL
+    if !mongoConnectionString.contains("tls=true") {
+        mongoConnectionString += "?tls=true"
+    }
+
+    try app.databases.use(.mongo(connectionString: mongoConnectionString), as: .mongo)
 
     // MARK: - Leaf Configuration
     app.views.use(.leaf)
@@ -37,8 +47,13 @@ public func configure(_ app: Application) throws {
     app.passwords.use(.bcrypt)
 
     // MARK: - MongoKitten Configuration
-    let mongoDatabase = try MongoDatabase.connect(databaseURL, on: app.eventLoopGroup.next()).wait()
-    try app.queues.use(.mongodb(mongoDatabase))
+    do {
+        let mongoDatabase = try MongoDatabase.connect(mongoConnectionString, on: app.eventLoopGroup.next()).wait()
+        try app.queues.use(.mongodb(mongoDatabase))
+    } catch {
+        app.logger.error("Failed to connect to MongoDB: \(error.localizedDescription)")
+        fatalError("Failed to connect to MongoDB")
+    }
 
     // MARK: - API Keys
     guard let deepLKey = Environment.get("DEEPL_API_KEY") else {
