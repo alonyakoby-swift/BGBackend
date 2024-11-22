@@ -28,14 +28,15 @@ public func configure(_ app: Application) throws {
         fatalError("DATABASE_URL not set in environment variables")
     }
     
-    // Ensure proper MongoDB connection URI format
-    let sanitizedDatabaseURL = databaseURL.replacingOccurrences(of: "<PASSWORD>", with: "REDACTED")
-    app.logger.info("Connecting to MongoDB at: \(sanitizedDatabaseURL)")
-    
+    // Adjust database URL based on whether it is local or remote (e.g., DigitalOcean)
     var mongoConnectionString = databaseURL
-    if !mongoConnectionString.contains("tls=true") {
-        mongoConnectionString += "?tls=true"
+    if mongoConnectionString.contains("digitalocean") {
+        if !mongoConnectionString.contains("authSource") {
+            mongoConnectionString += "?authSource=admin"
+        }
     }
+
+    app.logger.info("Connecting to MongoDB at: \(mongoConnectionString)")
 
     try app.databases.use(.mongo(connectionString: mongoConnectionString), as: .mongo)
 
@@ -63,8 +64,73 @@ public func configure(_ app: Application) throws {
         fatalError("OPENAI_API_KEY not set in environment variables")
     }
 
-    // Add your remaining configurations here...
+    app_migrations.forEach { app.migrations.add($0) }
+    try app.autoMigrate().wait()
 
-    // MARK: - Routes
+    // Configure multiple allowed origins
+    let allowedOrigins: [String] = [
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:4000",
+        "http://localhost:4001",
+        "http://localhost:5500",
+        "http://localhost:4500",
+    ]
+    
+    // Initialize the custom CORS middleware
+    let corsMiddleware = CustomCORSMiddleware(
+        allowedOrigins: allowedOrigins,
+        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+        allowedHeaders: [
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+            "User-Agent",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform"
+        ],
+        allowCredentials: true
+    )
+
+    app.middleware.use(ErrorMiddleware.default(environment: app.environment))
+    app.middleware.use(corsMiddleware) // Move this after ErrorMiddleware
+    let mongoDatabase = try MongoDatabase.connect(mongoConnectionString, on: app.eventLoopGroup.next()).wait()
+
+    
+    let ollama = OllamaManager()
+    let openAI = OpenAIManager(apiKey: openAIApiKey)
+    globalTranslationManager = TranslationManager(
+        db: app.db,
+        authKey: deepLKey,
+        aiManager: AIManager(ollama: ollama, openAI: openAI, model: .openAI)
+    )
+
+    // Debugging keys
+    app.logger.info("DEEP: \(deepLKey)")
+    app.logger.info("OPENAI: \(openAIApiKey)")
+    // MARK: - Scheduled Jobs
+    app.queues.schedule(TestJob())
+        .weekly()
+        .on(.monday)
+        .at(8, 0)
+
+    // Setup Queues with MongoDB driver
+    try app.queues.use(.mongodb(mongoDatabase))
+
+    // Start the scheduled jobs
+    try app.queues.startScheduledJobs()
+
+    // Register routes
     try routes(app)
+}
+
+// MARK: - Scheduled Job Example
+struct TestJob: AsyncScheduledJob {
+    func run(context: QueueContext) async throws {
+        context.logger.info("Test Job is running on schedule.")
+        print("Test Job is running on schedule.")
+    }
 }
