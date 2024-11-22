@@ -75,6 +75,7 @@ public func configure(_ app: Application) throws {
         "http://localhost:4001",
         "http://localhost:5500",
         "http://localhost:4500",
+        "https://bg-frontend-oi4hx.ondigitalocean.app"
     ]
     
     // Initialize the custom CORS middleware
@@ -102,6 +103,7 @@ public func configure(_ app: Application) throws {
     
     let ollama = OllamaManager()
     let openAI = OpenAIManager(apiKey: openAIApiKey)
+    
     globalTranslationManager = TranslationManager(
         db: app.db,
         authKey: deepLKey,
