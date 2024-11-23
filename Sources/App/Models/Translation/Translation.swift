@@ -26,6 +26,8 @@ final class Translation: Model, Content, Codable {
     @Field(key: FieldKeys.translation) var translation: String
     @OptionalField(key: FieldKeys.status) var status: TranslationStatus?
     @OptionalField(key: FieldKeys.prompt) var prompt: String?
+    @OptionalField(key: FieldKeys.overridenBy) var overridenBy: String?
+    @OptionalField(key: FieldKeys.overriden) var overriden: Bool?
     
     struct FieldKeys {
         static var product: FieldKey { "product" }
@@ -38,6 +40,8 @@ final class Translation: Model, Content, Codable {
         static var verification: FieldKey { "verification" }
         static var status: FieldKey { "status" }
         static var prompt: FieldKey { "prompt" }
+        static var overridenBy: FieldKey { "overridenBy"}
+        static var overriden: FieldKey { "overriden"}
     }
 
     enum CodingKeys: String, CodingKey {
@@ -52,7 +56,7 @@ final class Translation: Model, Content, Codable {
 
     init() { } 
 
-    init(id: UUID? = nil, product: Product.IDValue, itemCode: String, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil) {
+    init(id: UUID? = nil, product: Product.IDValue, itemCode: String, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil, overridenBy: String? = nil, overriden: Bool? = false) {
         self.id = id
         self.$product.id = product
         self.itemCode = itemCode
@@ -63,6 +67,8 @@ final class Translation: Model, Content, Codable {
         self.translation = translation
         self.status = status
         self.prompt = prompt
+        self.overridenBy = overridenBy
+        self.overriden = overriden
     }
     
     func verify(manager: TranslationManagerProtocol) async {
@@ -99,6 +105,8 @@ extension TranslationMigration: Migration {
             .field(Translation.FieldKeys.verification, .string)
             .field(Translation.FieldKeys.status, .string)
             .field(Translation.FieldKeys.prompt, .string)
+            .field(Translation.FieldKeys.overridenBy, .string)
+            .field(Translation.FieldKeys.overriden, .bool)
             .create()
     }
 
@@ -119,6 +127,8 @@ extension Translation: Mergeable {
         merged.verification = other.verification
         merged.status = other.status
         merged.prompt = other.prompt
+        merged.overridenBy = other.overridenBy
+        merged.overriden = other.overriden
         return merged
     }
 }

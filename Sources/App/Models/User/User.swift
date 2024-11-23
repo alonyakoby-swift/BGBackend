@@ -9,6 +9,25 @@ import Foundation
 import Fluent
 import Vapor
 
+struct Permissions: Codable {
+    var readProducts: Bool
+    var readUsers: Bool
+    var updateUsers: Bool
+    var createUsers: Bool
+    var writeProducts: Bool
+    var overrideTranslations: Bool
+    
+    init(readProducts: Bool?, readUsers: Bool?, updateUsers: Bool?, createUsers: Bool?, writeProducts: Bool?, overrideTranslations: Bool?) {
+        self.readProducts = readProducts ?? false
+        self.readUsers = readUsers ?? false
+        self.updateUsers = updateUsers ?? false
+        self.createUsers = createUsers ?? false
+        self.writeProducts = writeProducts ?? false
+        self.overrideTranslations = overrideTranslations ?? false
+    }
+    
+}
+
 final class User: Model, Content, Codable {
     static let schema = "user"
 
@@ -18,6 +37,8 @@ final class User: Model, Content, Codable {
     @Field(key: FieldKeys.firstName) var firstName: String
     @Field(key: FieldKeys.lastName) var lastName: String
     @Field(key: FieldKeys.email) var email: String
+    @Field(key: FieldKeys.permissions) var permissions: Permissions
+    @OptionalField(key: FieldKeys.profileImg) var profileImg: String?
     @Field(key: FieldKeys.passwordHash) var passwordHash: String
     
     struct Public: Content, Codable {
@@ -37,12 +58,14 @@ final class User: Model, Content, Codable {
         static var firstName: FieldKey { "firstName" }
         static var lastName: FieldKey { "lastName" }
         static var email: FieldKey { "email" }
+        static var permissions: FieldKey { "permissions" }
+        static var profileImg: FieldKey { "profileImg" }
         static var passwordHash: FieldKey { "passwordHash" }
     }
 
     init() {}
     
-    init(id: UUID? = nil, userID: String, type: UserType, firstName: String, lastName: String, email: String, passwordHash: String) {
+    init(id: UUID? = nil, userID: String, type: UserType, firstName: String, lastName: String, email: String, passwordHash: String, permissions: Permissions, profileImg: String? ) {
         self.id = id
         self.userID = userID
         self.type = type
@@ -50,6 +73,8 @@ final class User: Model, Content, Codable {
         self.lastName = lastName
         self.email = email
         self.passwordHash = passwordHash
+        self.permissions = permissions
+        self.profileImg = profileImg
     }
 }
 
@@ -62,6 +87,8 @@ extension UserMigration: Migration {
             .field(User.FieldKeys.lastName, .string, .required)
             .field(User.FieldKeys.email, .string, .required)
             .field(User.FieldKeys.passwordHash, .string, .required)
+            .field(User.FieldKeys.profileImg, .string)
+            .field(User.FieldKeys.permissions, .json)
             .unique(on: User.FieldKeys.email)
             .create()
     }
@@ -74,11 +101,13 @@ extension UserMigration: Migration {
 enum UserType: String, Codable {
     case admin
     case staff
+    case manager
     
     var position: String {
         switch self {
             case .admin: return "Admin User"
             case .staff: return "Staff"
+            case .manager: return "Manager"
         }
     }
 }
@@ -90,7 +119,9 @@ extension User: Authenticatable {
              firstName: userSignup.firstName,
              lastName: userSignup.lastName,
              email: userSignup.email,
-             passwordHash: try Bcrypt.hash(userSignup.password))
+             passwordHash: try Bcrypt.hash(userSignup.password), 
+             permissions: userSignup.permissions,
+             profileImg: userSignup.profileImg)
     }
     
     func createToken(source: SessionSource) throws -> Token {

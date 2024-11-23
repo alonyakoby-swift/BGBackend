@@ -318,18 +318,37 @@ final class ProductController: RouteCollection {
     }
     
     func search(req: Request) -> EventLoopFuture<[Product]> {
-        guard let searchString = req.query[String.self, at: "query"] else {
-            return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Missing search query"))
-        }
+        var queryBuilder = Product.query(on: req.db)
 
-        return Product.query(on: req.db)
-            .group(.or) { group in
-                group.filter(\.$CodArticle == searchString)
+        // Search query parameter
+        if let searchString = req.query[String.self, at: "query"] {
+            queryBuilder = queryBuilder.group(.or) { group in
+                group.filter(\.$CodArticle ~~ searchString)
                 group.filter(\.$Description ~~ searchString)
             }
-            .all()
+        }
+
+        // Brand filter
+        if let brand = req.query[String.self, at: "brand"] {
+            queryBuilder = queryBuilder.filter(\.$Brand == brand)
+        }
+
+        // Category filter
+        if let category = req.query[String.self, at: "category"] {
+            queryBuilder = queryBuilder.filter(\.$Category == category)
+        }
+
+        // Subcategory filter
+        if let subcategory = req.query[String.self, at: "subcategory"] {
+            queryBuilder = queryBuilder.filter(\.$SubCategory == subcategory)
+        }
+
+        return queryBuilder.all()
     }
-    
+
+    // Example URL for testing:
+    // /products/search?query=example&brand=BrandA&category=CategoryX&subcategory=SubCategoryY
+
     func index(req: Request) -> EventLoopFuture<Page<Product>> {
         return Product.query(on: req.db)
             .sort(\.$CodArticle, .ascending)

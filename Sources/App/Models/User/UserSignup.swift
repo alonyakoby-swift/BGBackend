@@ -14,15 +14,19 @@ struct UserSignup: Content {
     public let lastName: String
     public let email: String
     public let password: String
+    public let profileImg: String?
+    public let permissions: Permissions
     public let type: UserType
     
-    init(id: String, firstName: String, lastName: String, email: String, password: String, type: UserType) {
+    init(id: String, firstName: String, lastName: String, email: String, password: String, type: UserType, profileImg: String?, permissions: Permissions) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
         self.email = email
         self.password = password
         self.type = type
+        self.profileImg = profileImg
+        self.permissions = permissions
     }
 }
 
