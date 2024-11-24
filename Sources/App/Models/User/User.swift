@@ -32,42 +32,41 @@ final class User: Model, Content, Codable {
     static let schema = "user"
 
     @ID(custom: FieldKeys.id) var id: UUID?
-    @Field(key: FieldKeys.userID) var userID: String
     @Field(key: FieldKeys.type) var type: UserType
     @Field(key: FieldKeys.firstName) var firstName: String
     @Field(key: FieldKeys.lastName) var lastName: String
     @Field(key: FieldKeys.email) var email: String
     @Field(key: FieldKeys.permissions) var permissions: Permissions
+    @OptionalField(key: FieldKeys.position) var position: String?
     @OptionalField(key: FieldKeys.profileImg) var profileImg: String?
     @Field(key: FieldKeys.passwordHash) var passwordHash: String
     
     struct Public: Content, Codable {
         let id: UUID
-        let userID: String
         let email: String
         let type: UserType
         let passwordHash: String
         let first: String
         let last: String
+        let position: String
     }
 
     struct FieldKeys {
         static var id: FieldKey { "id" }
-        static var userID: FieldKey { "userID" }
         static var type: FieldKey { "type" }
         static var firstName: FieldKey { "firstName" }
         static var lastName: FieldKey { "lastName" }
         static var email: FieldKey { "email" }
         static var permissions: FieldKey { "permissions" }
         static var profileImg: FieldKey { "profileImg" }
+        static var position: FieldKey { "position" }
         static var passwordHash: FieldKey { "passwordHash" }
     }
 
     init() {}
     
-    init(id: UUID? = nil, userID: String, type: UserType, firstName: String, lastName: String, email: String, passwordHash: String, permissions: Permissions, profileImg: String? ) {
+    init(id: UUID? = nil, type: UserType, firstName: String, lastName: String, email: String, passwordHash: String, permissions: Permissions, profileImg: String?, position: String?) {
         self.id = id
-        self.userID = userID
         self.type = type
         self.firstName = firstName
         self.lastName = lastName
@@ -75,6 +74,7 @@ final class User: Model, Content, Codable {
         self.passwordHash = passwordHash
         self.permissions = permissions
         self.profileImg = profileImg
+        self.position = position
     }
 }
 
@@ -88,6 +88,7 @@ extension UserMigration: Migration {
             .field(User.FieldKeys.email, .string, .required)
             .field(User.FieldKeys.passwordHash, .string, .required)
             .field(User.FieldKeys.profileImg, .string)
+            .field(User.FieldKeys.position, .string)
             .field(User.FieldKeys.permissions, .json)
             .unique(on: User.FieldKeys.email)
             .create()
@@ -102,26 +103,18 @@ enum UserType: String, Codable {
     case admin
     case staff
     case manager
-    
-    var position: String {
-        switch self {
-            case .admin: return "Admin User"
-            case .staff: return "Staff"
-            case .manager: return "Manager"
-        }
-    }
 }
 
 extension User: Authenticatable {
     static func create(from userSignup: UserSignup) throws -> User {
-        User(userID:userSignup.id,
-             type: userSignup.type,
+        User(type: userSignup.type,
              firstName: userSignup.firstName,
              lastName: userSignup.lastName,
              email: userSignup.email,
              passwordHash: try Bcrypt.hash(userSignup.password), 
              permissions: userSignup.permissions,
-             profileImg: userSignup.profileImg)
+             profileImg: userSignup.profileImg,
+             position: userSignup.position)
     }
     
     func createToken(source: SessionSource) throws -> Token {
@@ -135,12 +128,12 @@ extension User: Authenticatable {
     
     func asPublic() throws -> Public {
         Public(id: try requireID(),
-               userID: userID,
                email: email,
                type: type,
                passwordHash: passwordHash,
                first: firstName,
-               last: lastName)
+               last: lastName,
+               position: position ?? "")
     }
 }
 

@@ -27,6 +27,7 @@ final class UserController: RouteCollection {
         
         route.patch(":id", use: repository.updateID)
         route.patch("batch", use: repository.updateBatch)
+        route.get("search", use: search)
     }
     
     func boot(routes: RoutesBuilder) throws {
@@ -44,7 +45,6 @@ final class UserController: RouteCollection {
         let userSignup = try req.content.decode(UserSignup.self)
         let user = try User.create(from: userSignup)
         var token: Token!
-
         return checkIfUserExists(userSignup.email, req: req).flatMap { exists in
             guard !exists else {
                 return req.eventLoop.future(error: UserError.emailTaken)
@@ -108,6 +108,36 @@ final class UserController: RouteCollection {
             NewSession(token: token.value, user: try user.asPublic())
         }
     }
+    
+    func search(req: Request) -> EventLoopFuture<[User.Public]> {
+        var queryBuilder = User.query(on: req.db)
+        
+        // Get the search query from request
+        if let searchString = req.query[String.self, at: "query"]?.lowercased(), !searchString.isEmpty {
+            req.logger.info("Performing search for users with query: \(searchString)")
+            
+            // Grouping conditions using `.group(.or)` to match any of the given fields
+            queryBuilder = queryBuilder.group(.or) { group in
+                group.filter(\.$firstName, .custom("ILIKE"), "%\(searchString)%")
+                group.filter(\.$lastName, .custom("ILIKE"), "%\(searchString)%")
+                group.filter(\.$email, .custom("ILIKE"), "%\(searchString)%")
+                group.filter(\.$position, .custom("ILIKE"), "%\(searchString)%")
+            }
+        } else {
+            req.logger.warning("Missing or empty search query parameter.")
+            return req.eventLoop.future([])
+        }
+        
+        return queryBuilder.all().flatMapThrowing { users in
+            req.logger.info("Search returned \(users.count) user(s).")
+            return try users.map { user in
+                try user.asPublic()
+            }
+        }
+    }
+
+
+
 }
 
 extension User: Mergeable {
