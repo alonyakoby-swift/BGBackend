@@ -46,9 +46,9 @@ final class User: Model, Content, Codable {
         let email: String
         let type: UserType
         let passwordHash: String
-        let first: String
-        let last: String
+        let name: String
         let position: String
+        let image: String?
     }
 
     struct FieldKeys {
@@ -131,9 +131,9 @@ extension User: Authenticatable {
                email: email,
                type: type,
                passwordHash: passwordHash,
-               first: firstName,
-               last: lastName,
-               position: position ?? "")
+               name: firstName + " " + lastName,
+               position: position ?? "",
+               image: profileImg)
     }
 }
 
