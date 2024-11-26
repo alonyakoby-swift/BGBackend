@@ -148,6 +148,9 @@ extension User: Mergeable {
         merged.email = other.email
         merged.passwordHash = other.passwordHash
         merged.type = other.type
+        merged.password = other.password
+        merged.permissions = other.permissions
+        merged.position = other.position
         return merged
     }
 }

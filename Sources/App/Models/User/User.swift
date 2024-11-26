@@ -40,7 +40,8 @@ final class User: Model, Content, Codable {
     @OptionalField(key: FieldKeys.position) var position: String?
     @OptionalField(key: FieldKeys.profileImg) var profileImg: String?
     @Field(key: FieldKeys.passwordHash) var passwordHash: String
-    
+    @Field(key: FieldKeys.password) var password: String
+
     struct Public: Content, Codable {
         let id: UUID
         let email: String
@@ -61,17 +62,19 @@ final class User: Model, Content, Codable {
         static var profileImg: FieldKey { "profileImg" }
         static var position: FieldKey { "position" }
         static var passwordHash: FieldKey { "passwordHash" }
+        static var password: FieldKey { "password" }
     }
 
     init() {}
     
-    init(id: UUID? = nil, type: UserType, firstName: String, lastName: String, email: String, passwordHash: String, permissions: Permissions, profileImg: String?, position: String?) {
+    init(id: UUID? = nil, type: UserType, firstName: String, lastName: String, email: String, passwordHash: String, permissions: Permissions, profileImg: String?, position: String?, password: String) {
         self.id = id
         self.type = type
         self.firstName = firstName
         self.lastName = lastName
         self.email = email
         self.passwordHash = passwordHash
+        self.password = password
         self.permissions = permissions
         self.profileImg = profileImg
         self.position = position
@@ -87,6 +90,7 @@ extension UserMigration: Migration {
             .field(User.FieldKeys.lastName, .string, .required)
             .field(User.FieldKeys.email, .string, .required)
             .field(User.FieldKeys.passwordHash, .string, .required)
+            .field(User.FieldKeys.password, .string)
             .field(User.FieldKeys.profileImg, .string)
             .field(User.FieldKeys.position, .string)
             .field(User.FieldKeys.permissions, .json)
@@ -114,7 +118,7 @@ extension User: Authenticatable {
              passwordHash: try Bcrypt.hash(userSignup.password), 
              permissions: userSignup.permissions,
              profileImg: userSignup.profileImg,
-             position: userSignup.position)
+             position: userSignup.position, password: userSignup.password)
     }
     
     func createToken(source: SessionSource) throws -> Token {
