@@ -267,13 +267,21 @@ final class ProductController: RouteCollection {
         return promise.futureResult
     }
 
-    func listBrands(req: Request) -> EventLoopFuture<[String]> {
+    func listBrands(req: Request) -> EventLoopFuture<[String: [String]]> {
         return Product.query(on: req.db)
-            .unique().field(\.$Brand)
             .all()
             .map { products in
-                return products.compactMap { $0.Brand }
-                    .removingDuplicates()
+                let uniqueBrands = products.compactMap { $0.Brand }.removingDuplicates()
+                let uniqueCategories = products.compactMap { $0.Category }.removingDuplicates()
+                let uniqueSubcategories = products.compactMap { $0.SubCategory }.removingDuplicates()
+                let uniqueStatuses = products.compactMap { $0.ProductStatus }.removingDuplicates()
+
+                return [
+                    "brands": uniqueBrands,
+                    "categories": uniqueCategories,
+                    "subcategories": uniqueSubcategories,
+                    "statuses": uniqueStatuses
+                ]
             }
     }
 
