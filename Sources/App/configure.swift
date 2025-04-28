@@ -24,10 +24,11 @@ public func configure(_ app: Application) throws {
     app.http.server.configuration.port = Int(Environment.get("PORT") ?? "8080") ?? 8080
 
     // MARK: - Database Configuration
-    guard let databaseURL = Environment.get("CONNECTION_STRING") else {
-        fatalError("DATABASE_URL not set in environment variables")
-    }
+//    guard let databaseURL = Environment.get("CONNECTION_STRING") else {
+//        fatalError("DATABASE_URL not set in environment variables")
+//    }
     
+    let databaseURL = ENV.databaseURL.dev_default
     // Adjust database URL based on whether it is local or remote (e.g., DigitalOcean)
     var mongoConnectionString = databaseURL
     if mongoConnectionString.contains("digitalocean") {
@@ -57,9 +58,10 @@ public func configure(_ app: Application) throws {
     }
 
     // MARK: - API Keys
-    guard let deepLKey = Environment.get("DEEPL_API_KEY") else {
-        fatalError("DEEPL_API_KEY not set in environment variables")
-    }
+//    guard let deepLKey = Environment.get("DEEPL_API_KEY") else {
+//        fatalError("DEEPL_API_KEY not set in environment variables")
+//    }
+    let deepLKey = "DeepL-Auth-Key 054c8386-bc46-48af-a919-1d79960b400f:fx"
     guard let openAIApiKey = Environment.get("OPENAI_API_KEY") else {
         fatalError("OPENAI_API_KEY not set in environment variables")
     }
@@ -103,11 +105,12 @@ public func configure(_ app: Application) throws {
     
     let ollama = OllamaManager()
     let openAI = OpenAIManager(apiKey: openAIApiKey)
+    let deepSeekManager = DeepSeekManager(apiKey: "sk-633329b2091348dfb1355e69e0400773")
     
     globalTranslationManager = TranslationManager(
         db: app.db,
         authKey: deepLKey,
-        aiManager: AIManager(ollama: ollama, openAI: openAI, model: .openAI)
+        aiManager: AIManager(ollama: ollama, openAI: openAI, deepseek: deepSeekManager, model: .deepseek)
     )
 
     // Debugging keys

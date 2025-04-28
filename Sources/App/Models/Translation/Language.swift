@@ -168,3 +168,16 @@ enum Language: String, CaseIterable, Codable {
         }
     }
 }
+
+extension Language {
+    var deeplCode: String {
+        switch self {
+        case .enUS: return "EN"
+        default: return self.rawValue
+        }
+    }
+
+    var isEnglish: Bool {
+        return self == .enUS
+    }
+}

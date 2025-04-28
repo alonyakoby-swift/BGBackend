@@ -18,12 +18,11 @@ final class Translation: Model, Content, Codable {
 
     @ID(key: .id) var id: UUID?
     @Parent(key: FieldKeys.product) var product: Product
-    @Field(key: FieldKeys.itemCode) var itemCode: String
     @Field(key: FieldKeys.base) var base: String
+    @Field(key: FieldKeys.translation) var translation: String
     @Field(key: FieldKeys.language) var language: Language
     @Field(key: FieldKeys.rating) var rating: Int
     @Field(key: FieldKeys.verification) var verification: String?
-    @Field(key: FieldKeys.translation) var translation: String
     @OptionalField(key: FieldKeys.status) var status: TranslationStatus?
     @OptionalField(key: FieldKeys.prompt) var prompt: String?
     @OptionalField(key: FieldKeys.overridenBy) var overridenBy: String?
@@ -56,10 +55,9 @@ final class Translation: Model, Content, Codable {
 
     init() { } 
 
-    init(id: UUID? = nil, product: Product.IDValue, itemCode: String, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil, overridenBy: String? = nil, overriden: Bool? = false) {
+    init(id: UUID? = nil, product: Product.IDValue, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil, overridenBy: String? = nil, overriden: Bool? = false) {
         self.id = id
         self.$product.id = product
-        self.itemCode = itemCode
         self.base = base
         self.language = language
         self.rating = rating
@@ -74,17 +72,7 @@ final class Translation: Model, Content, Codable {
     func verify(manager: TranslationManagerProtocol) async {
         if let id = self.id {
             do {
-                try await manager.verifyText(translationID: id)
-            } catch {
-                
-            }
-        }
-    }
-    
-    func translate(manager: TranslationManagerProtocol, toLanguage: Language, productID: UUID) async {
-        if let id = self.id {
-            do {
-                try await manager.translateText(translationID: id, toLanguage: toLanguage, productID: productID)
+                try await manager.verifyProductTranslation(translationID: id)
             } catch {
                 
             }
@@ -97,7 +85,6 @@ extension TranslationMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Translation.schema)
             .id()
-            .field(Translation.FieldKeys.itemCode, .string, .required)
             .field(Translation.FieldKeys.base, .string, .required)
             .field(Translation.FieldKeys.language, .string, .required)
             .field(Translation.FieldKeys.rating, .int, .required)
@@ -118,7 +105,6 @@ extension TranslationMigration: Migration {
 extension Translation: Mergeable {
     func merge(from other: Translation) -> Translation {
         var merged = self
-        merged.itemCode = other.itemCode
         merged.$product.id = other.$product.id
         merged.base = other.base
         merged.language = other.language

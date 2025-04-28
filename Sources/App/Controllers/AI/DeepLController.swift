@@ -11,7 +11,8 @@ import FoundationNetworking
 #endif
 import Vapor
 
-var globalDeepLkey: String?
+//var globalDeepLkey: String?
+var globalDeepLkey: String? = "054c8386-bc46-48af-a919-1d79960b400f:fx"
 
 /// A controller for handling DeepL translation related routes.
 final class DeepLController: RouteCollection {

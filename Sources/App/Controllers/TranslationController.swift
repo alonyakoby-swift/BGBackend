@@ -18,7 +18,7 @@ final class TranslationController: RouteCollection {
         route.get(use: repository.index)
         route.get(":id", use: repository.getbyID)
         route.get("overview", use: getOverview) // New route for overview
-        route.get("item/:itemCode", use: getTranslationsForItemCode) // New route for itemCode
+//        route.get("item/:itemCode", use: getTranslationsForItemCode) // New route for itemCode
 
         route.delete(":id", use: repository.deleteID)
 
@@ -51,15 +51,15 @@ final class TranslationController: RouteCollection {
     }
 
     // New function to get translations for a specific item code
-    func getTranslationsForItemCode(req: Request) async throws -> [Translation] {
-        guard let itemCode = req.parameters.get("itemCode") else {
-            throw Abort(.badRequest, reason: "Missing item code parameter")
-        }
-        
-        return try await Translation.query(on: req.db)
-            .filter(\.$itemCode == itemCode)
-            .all()
-    }
+//    func getTranslationsForItemCode(req: Request) async throws -> [Translation] {
+//        guard let itemCode = req.parameters.get("itemCode") else {
+//            throw Abort(.badRequest, reason: "Missing item code parameter")
+//        }
+//        
+//        return try await Translation.query(on: req.db)
+//            .filter(\<#Root#> == itemCode)
+//            .all()
+//    }
     
     func verifyTranslation(req: Request) async throws -> HTTPStatus {
         guard let id = req.parameters.get("id", as: UUID.self) else {
@@ -94,9 +94,9 @@ final class TranslationController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        if let manager = globalTranslationManager {
-            await translation.translate(manager: manager, toLanguage: language, productID: productID)
-        }
+//        if let manager = globalTranslationManager {
+//            await translation.translate(manager: manager, toLanguage: language, productID: productID)
+//        }
         return .ok
     }
 

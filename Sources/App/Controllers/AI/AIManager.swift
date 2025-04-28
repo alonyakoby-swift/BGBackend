@@ -3,12 +3,14 @@ import Foundation
 class AIManager {
     let ollama: OllamaManager
     let openAI: OpenAIManager
+    let deepseek : DeepSeekManager?
     let model: AIModel
 
     enum AIModel: String {
         case llama3 = "llama3"
         case openAI = "openAI"
         case mistral = "mistral:latest"
+        case deepseek = "deepseek-chat"
 
         var description: String {
             switch self {
@@ -18,13 +20,16 @@ class AIManager {
                 return "ChatGPT 4 - OpenAI's private model. Requires internet and subscription. Fast, optimized for grammar and translation."
             case .mistral:
                 return "Mistral - Public model via Ollama Manager. Offline, no authentication required. Good for grammar/translation but slower. Includes custom Bergner Data."
+            case .deepseek:
+                return "DeepSeek - Public model via DeepSeek Manager. Requires internet. Fast, optimized for grammar and translation, but not optimized for context."
             }
         }
     }
 
-    init(ollama: OllamaManager, openAI: OpenAIManager, model: AIModel) {
+    init(ollama: OllamaManager, openAI: OpenAIManager, deepseek: DeepSeekManager?, model: AIModel) {
         self.ollama = ollama
         self.openAI = openAI
+        self.deepseek = deepseek
         self.model = model
     }
 
@@ -38,6 +43,9 @@ class AIManager {
             }
         case .openAI:
             openAI.basicPrompt(prompt: prompt, completion: completion)
+        case .deepseek:
+            deepseek?.generateResponse(prompt: prompt, completion: completion)
         }
+    
     }
 }

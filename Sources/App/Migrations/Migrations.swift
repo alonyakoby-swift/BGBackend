@@ -13,7 +13,8 @@ let app_migrations: [Migration] = [
     ProductMigration(),
     TokenMigration(),
     ExceptionMigration(),
-    LogMigration()
+    LogMigration(),
+    SellingPointMigration()
 ]
 struct UserMigration { }
 struct UserVerificationTokenMigration { }
@@ -22,3 +23,4 @@ struct TokenMigration { }
 struct TranslationMigration { }
 struct ExceptionMigration { }
 struct LogMigration { }
+struct SellingPointMigration { }
