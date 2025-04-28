@@ -17,7 +17,8 @@ final class Translation: Model, Content, Codable {
     static let schema = "translations"
 
     @ID(key: .id) var id: UUID?
-    @Parent(key: FieldKeys.product) var product: Product
+    @OptionalParent(key: FieldKeys.product) var product: Product?
+    @OptionalParent(key: FieldKeys.sellingPoint) var sellingPoint: SellingPoint?
     @Field(key: FieldKeys.base) var base: String
     @Field(key: FieldKeys.translation) var translation: String
     @Field(key: FieldKeys.language) var language: Language
@@ -30,6 +31,7 @@ final class Translation: Model, Content, Codable {
     
     struct FieldKeys {
         static var product: FieldKey { "product" }
+        static var sellingPoint: FieldKey { "sellingPoint" }
         static var id: FieldKey { "id" }
         static var itemCode: FieldKey { "itemCode" }
         static var base: FieldKey { "base" }
@@ -55,9 +57,10 @@ final class Translation: Model, Content, Codable {
 
     init() { } 
 
-    init(id: UUID? = nil, product: Product.IDValue, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil, overridenBy: String? = nil, overriden: Bool? = false) {
+    init(id: UUID? = nil, product: Product.IDValue?, sellingPoint: SellingPoint.IDValue?, base: String, language: Language, rating: Int, translation: String, verification: String?, status: TranslationStatus?, prompt: String? = nil, overridenBy: String? = nil, overriden: Bool? = false) {
         self.id = id
         self.$product.id = product
+        self.$sellingPoint.id = sellingPoint
         self.base = base
         self.language = language
         self.rating = rating
@@ -106,6 +109,7 @@ extension Translation: Mergeable {
     func merge(from other: Translation) -> Translation {
         var merged = self
         merged.$product.id = other.$product.id
+        merged.$sellingPoint.id = other.$sellingPoint.id
         merged.base = other.base
         merged.language = other.language
         merged.rating = other.rating

@@ -20,6 +20,10 @@ protocol TranslationManagerProtocol {
     func verifyTranslation(product: Product, translatedText: String, language: Language) async throws -> (feedback: String, rating: Int)
     func fetchExceptions() async throws -> [String: String]
     func maskAPIKey(_ authHeader: String) -> String
+    func processSellingPointWorkflow(sellingPointID: UUID) async throws
+    func formatSellingPointText(sellingPointID: UUID) async throws
+    func verifySellingPointTranslation(translationID: UUID) async throws
+
 }
 
 final class TranslationManager: TranslationManagerProtocol {
@@ -192,7 +196,11 @@ final class TranslationManager: TranslationManagerProtocol {
             throw Abort(.notFound)
         }
 
-        let product = translationDB.product
+        guard let product = translationDB.product else {
+            print("[ERROR] Translation not found for ID: \(translationID)")
+            throw Abort(.notFound)
+        }
+        
         let (feedback, rating) = try await verifyTranslation(
             product: product,
             translatedText: translationDB.translation,
@@ -248,3 +256,121 @@ extension Array {
         }
     }
 }
+
+extension TranslationManager {
+    func processSellingPointWorkflow(sellingPointID: UUID) async throws {
+        print("[DEBUG] Starting processSellingPointWorkflow for sellingPointID: \(sellingPointID)")
+        try await formatSellingPointText(sellingPointID: sellingPointID)
+
+        let translations = try await Translation.query(on: db)
+            .filter(\.$sellingPoint.$id == sellingPointID)
+            .all()
+
+        let batches = translations.chunked(into: 3)
+
+        for batch in batches {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for translation in batch where !translation.language.isEnglish {
+                    group.addTask {
+                        print("[DEBUG] Translating for language: \(translation.language)")
+                        try await self.translateProductText(translationID: try translation.requireID(), toLanguage: translation.language)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+
+        Task.detached {
+            await self.runSellingPointVerificationInBackground(for: sellingPointID)
+        }
+    }
+
+    func formatSellingPointText(sellingPointID: UUID) async throws {
+        print("[DEBUG] Formatting selling point text for sellingPointID: \(sellingPointID)")
+        let exceptions = try await fetchExceptions()
+
+        guard let sellingPoint = try await SellingPoint.find(sellingPointID, on: db) else {
+            print("[ERROR] SellingPoint not found for ID: \(sellingPointID)")
+            throw Abort(.notFound)
+        }
+
+        sellingPoint.sellingPoint = await format(text: sellingPoint.sellingPoint, exceptions: exceptions)
+        try await sellingPoint.save(on: db)
+        print("[DEBUG] SellingPoint text formatted and saved for sellingPointID: \(sellingPointID)")
+    }
+
+    func runSellingPointVerificationInBackground(for sellingPointID: UUID) async {
+        do {
+            let translations = try await Translation.query(on: db)
+                .filter(\.$sellingPoint.$id == sellingPointID)
+                .filter(\.$status == .translated)
+                .all()
+
+            let batches = translations.chunked(into: 10)
+
+            for batch in batches {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for translation in batch {
+                        group.addTask {
+                            try await self.verifySellingPointTranslation(translationID: try translation.requireID())
+                        }
+                    }
+                    try await group.waitForAll()
+                }
+            }
+            print("[DEBUG] Background verification completed for sellingPointID: \(sellingPointID)")
+        } catch {
+            print("[ERROR] SellingPoint verification background task failed: \(error.localizedDescription)")
+        }
+    }
+
+    func verifySellingPointTranslation(translationID: UUID) async throws {
+        print("[DEBUG] Starting verifySellingPointTranslation for translationID: \(translationID)")
+        guard let translationDB = try await Translation.query(on: db)
+            .with(\.$sellingPoint)
+            .filter(\.$id == translationID)
+            .first() else {
+            print("[ERROR] Translation not found for ID: \(translationID)")
+            throw Abort(.notFound)
+        }
+
+        guard let sellingPoint = translationDB.sellingPoint else {
+            print("[ERROR] SellingPoint not found for translationID: \(translationID)")
+            throw Abort(.notFound)
+        }
+
+        let (feedback, rating) = try await verifyTranslationForSellingPoint(
+            sellingPoint: sellingPoint,
+            translatedText: translationDB.translation,
+            language: translationDB.language
+        )
+
+        translationDB.verification = feedback
+        translationDB.rating = rating
+        translationDB.status = .completed
+        try await translationDB.save(on: db)
+        print("[DEBUG] Verification completed and saved for translationID: \(translationID)")
+    }
+
+    func verifyTranslationForSellingPoint(sellingPoint: SellingPoint, translatedText: String, language: Language) async throws -> (feedback: String, rating: Int) {
+        print("[DEBUG] Starting verifyTranslation for sellingPointID: \(sellingPoint.id?.uuidString ?? "nil")")
+        let promptText = sellingPoint.promptText(language: language, translatedText: translatedText)
+        print("[DEBUG] Prompt: \(promptText)")
+
+        let verificationResult = try await withCheckedThrowingContinuation { continuation in
+            aiManager.basicPrompt(prompt: promptText) { result in
+                switch result {
+                case .success(let response):
+                    continuation.resume(returning: response)
+                case .failure(let error):
+                    print("[ERROR] AIManager prompt failed: \(error.localizedDescription)")
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+
+        let parser = FeedbackParser(response: verificationResult)
+        return (parser.parseFeedback(), parser.parseRating() ?? 0)
+    }
+}
+
