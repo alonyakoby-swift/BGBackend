@@ -110,16 +110,22 @@ final class ClientController: RouteCollection {
 extension ClientController {
     func setupRoutes(on app: RoutesBuilder) throws {
         let route = app.grouped(PathComponent(stringLiteral: path))
+        
+        // 🔒 everything inside `secure` requires ʼAuthorization: Bearer <token>ʼ
+        let secure = route.grouped(
+            Token.authenticator(),   // looks up the token + logs user in
+            Token.guardMiddleware()  // aborts with 401 if token missing/invalid
+        )
 
         // Product Routes
-        route.post("product", use: createProduct)
-        route.post("product", "code", use: getProductByCode)
-        route.post("products", "batch", use: getProductsByBatchCodes)
+        secure.post("product", use: createProduct)
+        secure.post("product", "code", use: getProductByCode)
+        secure.post("products", "batch", use: getProductsByBatchCodes)
 
         // Selling Point Routes
-        route.post("sp", use: createSellingPoint)
-        route.post("sp", "code", use: getSellingPointByCode)
-        route.post("sp", "batch", use: getSellingPointsByBatchCodes)
+        secure.post("sp", use: createSellingPoint)
+        secure.post("sp", "code", use: getSellingPointByCode)
+        secure.post("sp", "batch", use: getSellingPointsByBatchCodes)
     }
 }
 

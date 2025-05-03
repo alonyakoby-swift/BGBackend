@@ -60,7 +60,8 @@ final class Token: Model {
 extension Token: ModelTokenAuthenticatable {
     static let valueKey = \Token.$value
     static let userKey = \Token.$user
-    
+    typealias User = App.User
+
     var isValid: Bool {
         guard let expiryDate = expiresAt else {
             return true
