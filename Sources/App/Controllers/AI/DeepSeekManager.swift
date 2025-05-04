@@ -1,5 +1,3 @@
-// DeepSeekManager.swift
-
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
