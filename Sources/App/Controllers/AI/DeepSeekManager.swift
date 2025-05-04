@@ -1,6 +1,13 @@
+import Vapor
+import Fluent
 import Foundation
-import Combine
 
+#if canImport(Combine)
+import Combine
+#else
+import OpenCombine
+import OpenCombineFoundation
+#endif
 class DeepSeekManager {
     let baseURL = "https://api.deepseek.com/"
     var generatePath: String { baseURL + "v1/chat/completions" }
