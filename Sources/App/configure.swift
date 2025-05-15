@@ -11,7 +11,7 @@ enum AppMode {
 }
 public func configure(_ app: Application) throws {
     
-    var mode: AppMode = .production
+    var mode: AppMode = .development
     // MARK: - JSON Encoder/Decoder Configuration
     let encoder = JSONEncoder()
     encoder.keyEncodingStrategy = .convertToSnakeCase
@@ -60,7 +60,9 @@ public func configure(_ app: Application) throws {
         "http://localhost:4001",
         "http://localhost:5500",
         "http://localhost:4500",
-        "https://bg-frontend-oi4hx.ondigitalocean.app"
+        "http://localhost:5173",
+        "https://bg-frontend-oi4hx.ondigitalocean.app",
+        "https://docs-vizp7.ondigitalocean.app"
     ]
     let cors = CustomCORSMiddleware(
         allowedOrigins: allowedOrigins,
