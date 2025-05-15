@@ -11,7 +11,7 @@ enum AppMode {
 }
 public func configure(_ app: Application) throws {
     
-    var mode: AppMode = .development
+    var mode: AppMode = .production
     // MARK: - JSON Encoder/Decoder Configuration
     let encoder = JSONEncoder()
     encoder.keyEncodingStrategy = .convertToSnakeCase
