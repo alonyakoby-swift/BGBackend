@@ -126,6 +126,13 @@ extension ClientController {
         secure.post("sp", use: createSellingPoint)
         secure.post("sp", "code", use: getSellingPointByCode)
         secure.post("sp", "batch", use: getSellingPointsByBatchCodes)
+        
+        // Exception Routes
+        secure.post("exception", use: createException)
+        secure.put("exception", use: updateException)
+        secure.get("exception", ":id", use: getExceptionByID)
+        secure.delete("exception", ":id", use: deleteException)
+
     }
 }
 
@@ -253,5 +260,48 @@ extension ClientController {
 
         let responses = sellingPoints.map { SellingPointResponse(sellingPoint: $0) }
         return BatchSellingPointResponse(sellingPoints: responses)
+    }
+}
+
+// MARK: - Exception Handlers
+
+extension ClientController {
+    func createException(req: Request) async throws -> Response {
+        let newException = try req.content.decode(Exception.self)
+        try await newException.save(on: req.db)
+        return try await newException.encodeResponse(status: .created, for: req)
+    }
+
+    func updateException(req: Request) async throws -> Response {
+        let updatedException = try req.content.decode(Exception.self)
+        guard let id = updatedException.id,
+              let existing = try await Exception.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "Exception not found")
+        }
+
+        existing.original = updatedException.original
+        existing.replace = updatedException.replace
+        try await existing.save(on: req.db)
+        return try await existing.encodeResponse(for: req)
+    }
+
+    func getExceptionByID(req: Request) async throws -> Exception {
+        guard let idString = req.parameters.get("id"),
+              let uuid = UUID(uuidString: idString),
+              let exception = try await Exception.find(uuid, on: req.db) else {
+            throw Abort(.notFound, reason: "Exception not found")
+        }
+        return exception
+    }
+
+    func deleteException(req: Request) async throws -> HTTPStatus {
+        guard let idString = req.parameters.get("id"),
+              let uuid = UUID(uuidString: idString),
+              let exception = try await Exception.find(uuid, on: req.db) else {
+            throw Abort(.notFound, reason: "Exception not found")
+        }
+
+        try await exception.delete(on: req.db)
+        return .noContent
     }
 }
